@@ -149,20 +149,20 @@ img { max-width: 100%; display: block; }
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 32px;
+  font-size: 44px;
   letter-spacing: -0.02em;
-  text-shadow: 0 0 24px rgba(0, 229, 255, 0.15);
+  text-shadow: 0 0 30px rgba(0, 229, 255, 0.2);
 }
 .logo-dot {
   display: inline-block;
-  width: 13px; height: 13px;
+  width: 18px; height: 18px;
   border-radius: 50%;
   background: var(--led);
-  box-shadow: 0 0 0 0 var(--led-glow), 0 0 16px var(--led-glow);
-  margin: 0 5px;
+  box-shadow: 0 0 0 0 var(--led-glow), 0 0 22px var(--led-glow);
+  margin: 0 6px;
   transform: translateY(-2px);
   animation: pulse 2.4s ease-in-out infinite;
 }
