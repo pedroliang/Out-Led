@@ -142,22 +142,30 @@ function Hero() {
             </div>
           </Reveal>
         </div>
-        <Reveal as="div" className="hero-visual">
-          <div className="lamp">
-            <div className="lamp-glow"></div>
-            <div className="lamp-bulb"></div>
-          </div>
-          <div className="hero-tag t1">
-            <span className="dot"></span>
-            <span>Projetor 1500W</span>
-          </div>
-          <div className="hero-tag t2">
-            <span className="strike">R$ 390</span>
-            <span className="new">R$ 249</span>
+        <Reveal as="div" className="hero-visual hero-visual--product">
+          <div className="hero-featured-card">
+            <div className="hero-featured-img">
+              <div className="glow"></div>
+              <img src={PRODUCTS[0].img} alt={PRODUCTS[0].name} className="hero-featured-photo" />
+              <div className="product-badges">
+                <span className="badge badge-discount">−{Math.round((1 - PRODUCTS[0].price / PRODUCTS[0].oldPrice) * 100)}%</span>
+                <span className="badge badge-condition">Outlet</span>
+              </div>
+            </div>
+            <div className="hero-featured-body">
+              <div className="product-cat">{PRODUCTS[0].catLabel}</div>
+              <h3 className="product-title">{PRODUCTS[0].name}</h3>
+              <div className="product-price-row">
+                <div className="price-stack">
+                  <span className="price-old">R$ {PRODUCTS[0].oldPrice.toFixed(2).replace('.',',')}</span>
+                  <span className="price-now"><span className="currency">R$</span>{PRODUCTS[0].price.toFixed(2).replace('.',',')}</span>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="hero-tag t3">
             <span className="dot"></span>
-            <span>3 em estoque</span>
+            <span>Em estoque</span>
           </div>
         </Reveal>
       </div>
