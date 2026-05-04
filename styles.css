@@ -173,8 +173,8 @@ img { max-width: 100%; display: block; }
 
 .nav {
   display: flex;
-  gap: 28px;
-  font-size: 14px;
+  gap: 36px;
+  font-size: 28px;
   letter-spacing: 0.01em;
 }
 .nav a {
