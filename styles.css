@@ -653,6 +653,24 @@ img { max-width: 100%; display: block; }
 }
 .product:hover .product-svg { transform: scale(1.08); }
 
+.product-photo {
+  position: relative;
+  z-index: 1;
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  transition: transform .5s cubic-bezier(.2,.7,.2,1);
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3));
+}
+.product:hover .product-photo { transform: scale(1.08); }
+
+.modal-photo {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.4));
+}
+
 .product-badges {
   position: absolute;
   top: 14px; left: 14px;

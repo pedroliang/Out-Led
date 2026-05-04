@@ -264,7 +264,11 @@ function ProductCard({ p, onAdd, onView }) {
     <article className="product">
       <div className="product-img">
         <div className="glow"></div>
-        <Icon name={p.icon} color={p.color} />
+        {p.img ? (
+          <img src={p.img} alt={p.name} className="product-photo" loading="lazy" />
+        ) : (
+          <Icon name={p.icon} color={p.color} />
+        )}
         <div className="product-badges">
           <span className="badge badge-discount">−{discount}%</span>
           <span className="badge badge-condition">Outlet</span>
@@ -341,7 +345,11 @@ function QuickView({ product, onClose, onAdd }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>{UI.close}</button>
         <div className="modal-img">
-          <Icon name={p.icon} color={p.color} />
+          {p.img ? (
+            <img src={p.img} alt={p.name} className="modal-photo" />
+          ) : (
+            <Icon name={p.icon} color={p.color} />
+          )}
         </div>
         <div className="modal-body">
           <div className="product-cat">{p.catLabel}</div>
@@ -388,7 +396,13 @@ function CartDrawer({ open, items, onClose, onInc, onDec, onRemove }) {
           ) : (
             items.map(it => (
               <div className="cart-line" key={it.id}>
-                <div className="cart-line-img"><Icon name={it.icon} color={it.color}/></div>
+                <div className="cart-line-img">
+                  {it.img ? (
+                    <img src={it.img} alt={it.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  ) : (
+                    <Icon name={it.icon} color={it.color}/>
+                  )}
+                </div>
                 <div>
                   <div className="cart-line-name">{it.name}</div>
                   <div className="cart-line-price">R$ {it.price.toFixed(2).replace('.',',')}</div>
