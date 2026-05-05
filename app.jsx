@@ -179,7 +179,6 @@ function Strip() {
     { ico: UI.tag,       b: "Até 50% OFF",          s: "Em todo o catálogo outlet" },
     { ico: UI.shield,    b: "Garantia de 90 dias",  s: "Mesma do produto novo" },
     { ico: UI.truck,     b: "Frete grátis",         s: "Compras acima de R$ 299" },
-    { ico: UI.card,      b: "Em até 12x",           s: "Sem juros no cartão" },
   ];
   return (
     <Reveal as="div" stagger className="wrap">
