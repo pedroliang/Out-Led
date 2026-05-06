@@ -691,11 +691,16 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
       }
     });
 
+    // Pular login temporariamente para facilitar o cadastro
+    showAdmin("Acesso Direto");
+    
+    /* 
     // Auto-login if session is active
     if (isSessionActive()) {
       const user = sessionStorage.getItem("outled_user") || "Admin";
       showAdmin(user);
     }
+    */
   }
 
   // Load default data from data.js dynamically so admin panel has initial products
