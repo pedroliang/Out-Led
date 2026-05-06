@@ -96,14 +96,18 @@
     if (REMOTE) {
       try {
         const res = await fetch(`${API_URL}?action=loadAll`);
-        if (!res.ok) throw new Error("Erro ao carregar dados do servidor");
+        if (!res.ok) {
+           const errData = await res.json().catch(() => ({}));
+           throw new Error(errData.error || "Erro ao carregar dados do servidor");
+        }
         const data = await res.json();
         return {
           products: (data.products || []).map(dbToProduct),
           categories: (data.categories || []).map(c => ({ id: c.id, label: c.label, icon: c.icon || "projector" })),
         };
       } catch (e) {
-        console.error("[OutLedStore] Falha ao conectar com API, usando localStorage.", e);
+        console.error("[OutLedStore] Falha ao conectar com API", e);
+        alert("⚠️ ERRO DE CONEXÃO: " + e.message + "\n\nO site entrará em modo offline.");
       }
     }
     return {
@@ -134,7 +138,10 @@
           color: p.color
         })
       });
-      if (!res.ok) throw new Error("Erro ao salvar produto no servidor");
+      if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Erro ao salvar produto");
+      }
       return p;
     }
     const list = readLocalProducts();
