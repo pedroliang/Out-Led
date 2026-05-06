@@ -58,17 +58,18 @@
   function escapeHtml(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
 
-  // Generate a unique ID — short, readable, sortable by time
+  // Generate a simple sequential numeric ID — easy to read & say
   function generateId() {
-    // OL-XXXXX where X is base36 of timestamp + random
-    const t = Date.now().toString(36).toUpperCase().slice(-5);
-    const r = Math.random().toString(36).toUpperCase().slice(2, 5);
-    let id = "OL-" + t + r;
-    // Ensure uniqueness
-    let i = 0;
+    let max = 0;
+    products.forEach(p => {
+      const n = parseInt(String(p.id).replace(/\D/g, ""), 10);
+      if (!isNaN(n) && n > max) max = n;
+    });
+    let next = max + 1;
+    let id = String(next).padStart(4, "0");
     while (products.some(p => p.id === id)) {
-      i++;
-      id = "OL-" + t + r + i;
+      next++;
+      id = String(next).padStart(4, "0");
     }
     return id;
   }
@@ -131,7 +132,6 @@
       const q = searchTerm.toLowerCase();
       arr = arr.filter(p =>
         (p.name || "").toLowerCase().includes(q) ||
-        (p.codigo || "").toLowerCase().includes(q) ||
         (p.id || "").toLowerCase().includes(q) ||
         (p.desc || "").toLowerCase().includes(q) ||
         (p.condition || "").toLowerCase().includes(q)
@@ -162,8 +162,17 @@
       const disc = discount(p);
       const photoCount = m.photos.length;
       const videoCount = m.videos.length;
-      const codigo = p.codigo ? `<div class="cat-card-codigo">${escapeHtml(p.codigo)}</div>` : "";
-      const idPill = adminMode ? `<span class="cat-card-id">ID: ${escapeHtml(p.id)}</span>` : "";
+      const codigo = "";
+      const idPill = `<div class="cat-card-id">#${escapeHtml(p.id)}</div>`;
+      const adminActions = adminMode ? `
+        <div class="card-actions">
+          <button class="card-action-btn" data-edit="${escapeAttr(p.id)}" title="Editar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+          </button>
+          <button class="card-action-btn danger" data-delete="${escapeAttr(p.id)}" title="Excluir">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+          </button>
+        </div>` : "";
       return `
         <article class="cat-card ${adminMode ? "admin-mode" : ""}" data-id="${escapeAttr(p.id)}">
           <div class="cat-card-img">
@@ -184,15 +193,11 @@
                   ${videoCount}
                 </span>` : ""}
               </div>` : ""}
-            ${adminMode ? `
-              <button class="card-edit-btn" data-edit="${escapeAttr(p.id)}" title="Editar">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-              </button>` : ""}
+            ${adminActions}
           </div>
           <div class="cat-card-body">
             <div class="cat-card-cat">${escapeHtml(p.catLabel || "")}</div>
             <h3 class="cat-card-name">${escapeHtml(p.name)}</h3>
-            ${codigo}
             ${idPill}
             <div class="cat-card-prices">
               ${p.oldPrice && p.oldPrice > p.price ? `<span class="cat-price-old">R$ ${fmt(p.oldPrice)}</span>` : ""}
@@ -205,7 +210,7 @@
 
     $$(".cat-card", grid).forEach(card => {
       card.addEventListener("click", (e) => {
-        if (e.target.closest(".card-edit-btn")) return;
+        if (e.target.closest(".card-action-btn")) return;
         if (adminMode) {
           openEdit(card.dataset.id);
         } else {
@@ -213,10 +218,25 @@
         }
       });
     });
-    $$(".card-edit-btn", grid).forEach(btn => {
+    $$("[data-edit]", grid).forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         openEdit(btn.dataset.edit);
+      });
+    });
+    $$("[data-delete]", grid).forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.delete;
+        const p = products.find(x => x.id === id);
+        if (!p) return;
+        if (!confirm(`Excluir "${p.name}" (#${p.id})? Esta ação não pode ser desfeita.`)) return;
+        products = products.filter(x => x.id !== id);
+        saveData();
+        renderStats();
+        renderFilters();
+        renderGrid();
+        toast("Produto excluído · #" + id);
       });
     });
   }
@@ -243,8 +263,7 @@
     if (!p) return;
     const m = getMedia(p);
     const disc = discount(p);
-    const codigo = p.codigo ? `<div class="modal-codigo">Cód. ${escapeHtml(p.codigo)} · ID ${escapeHtml(p.id)}</div>`
-                            : `<div class="modal-codigo">ID ${escapeHtml(p.id)}</div>`;
+    const codigo = "";
     let mainMedia = "";
     if (m.all.length === 0) mainMedia = `<div class="gallery-empty">Sem foto disponível</div>`;
     else {
@@ -269,13 +288,13 @@
 
     $("#modal-body").innerHTML = `
       <div class="modal-gallery">
-        <div class="gallery-main">${mainMedia}${navBtns}</div>
+        <div class="gallery-main" id="gallery-main">${mainMedia}${navBtns}</div>
         ${thumbs}
       </div>
       <div class="modal-info">
         <div class="modal-cat">${escapeHtml(p.catLabel || "")}</div>
         <h2>${escapeHtml(p.name)}</h2>
-        ${codigo}
+        <div class="modal-id-pill">${escapeHtml(p.id)}</div>
         <div class="modal-prices">
           ${p.oldPrice && p.oldPrice > p.price ? `<span class="modal-price-old">R$ ${fmt(p.oldPrice)}</span>` : ""}
           <span class="modal-price-now">R$ ${fmt(p.price)}</span>
@@ -283,26 +302,69 @@
         </div>
         ${p.condition ? `<div class="condition-card"><div class="ttl">Por que está em outlet</div><p>${escapeHtml(p.condition)}</p></div>` : ""}
         ${p.desc ? `<div class="info-block"><h4>Descrição</h4><p>${escapeHtml(p.desc)}</p></div>` : ""}
-        <div class="modal-cta">
-          <a class="primary" href="index.html#produtos">Ir à loja
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
-          <button class="ghost" id="share-btn">Compartilhar</button>
-        </div>
       </div>`;
     $$(".gallery-thumb", $("#modal-body")).forEach(t => t.addEventListener("click", () => { galleryIndex = +t.dataset.idx; renderDetail(); }));
     const prev = $("#gal-prev"); const next = $("#gal-next");
-    if (prev) prev.addEventListener("click", () => { galleryIndex = (galleryIndex - 1 + m.all.length) % m.all.length; renderDetail(); });
-    if (next) next.addEventListener("click", () => { galleryIndex = (galleryIndex + 1) % m.all.length; renderDetail(); });
-    const share = $("#share-btn");
-    if (share) share.addEventListener("click", () => {
-      const url = window.location.href.split("?")[0] + "?p=" + encodeURIComponent(p.id);
-      if (navigator.share) navigator.share({ title: p.name, url }).catch(() => {});
-      else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => {
-        share.textContent = "Link copiado!";
-        setTimeout(() => { share.textContent = "Compartilhar"; }, 1800);
+    if (prev) prev.addEventListener("click", (e) => { e.stopPropagation(); galleryIndex = (galleryIndex - 1 + m.all.length) % m.all.length; renderDetail(); });
+    if (next) next.addEventListener("click", (e) => { e.stopPropagation(); galleryIndex = (galleryIndex + 1) % m.all.length; renderDetail(); });
+    // Click main media to open lightbox
+    const mainEl = $("#gallery-main");
+    if (mainEl && m.all.length > 0) {
+      mainEl.addEventListener("click", (e) => {
+        if (e.target.closest(".gallery-nav")) return;
+        if (e.target.tagName === "VIDEO") return; // let video controls work
+        openLightbox(m.all, galleryIndex);
       });
-    });
+    }
+  }
+
+  // ---------- Lightbox (fullscreen image/video viewer) ----------
+  let lightboxItems = [];
+  let lightboxIdx = 0;
+  function openLightbox(items, idx) {
+    lightboxItems = items;
+    lightboxIdx = idx || 0;
+    let lb = $("#cat-lightbox");
+    if (!lb) {
+      lb = document.createElement("div");
+      lb.id = "cat-lightbox";
+      lb.className = "cat-lightbox";
+      lb.innerHTML = `
+        <button class="lightbox-close" id="lb-close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M6 18 18 6"/></svg></button>
+        <button class="lightbox-nav prev" id="lb-prev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button class="lightbox-nav next" id="lb-next"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+        <div id="lb-content"></div>
+        <div class="lightbox-counter" id="lb-counter"></div>`;
+      document.body.appendChild(lb);
+      $("#lb-close").addEventListener("click", closeLightbox);
+      $("#lb-prev").addEventListener("click", () => { lightboxIdx = (lightboxIdx - 1 + lightboxItems.length) % lightboxItems.length; renderLightbox(); });
+      $("#lb-next").addEventListener("click", () => { lightboxIdx = (lightboxIdx + 1) % lightboxItems.length; renderLightbox(); });
+      lb.addEventListener("click", (e) => { if (e.target === lb) closeLightbox(); });
+    }
+    renderLightbox();
+    lb.classList.add("show");
+  }
+  function renderLightbox() {
+    const c = $("#lb-content");
+    if (!c) return;
+    const cur = lightboxItems[lightboxIdx];
+    c.innerHTML = cur.type === "video"
+      ? `<video src="${escapeAttr(cur.src)}" controls autoplay></video>`
+      : `<img src="${escapeAttr(cur.src)}" alt="" />`;
+    const counter = $("#lb-counter");
+    if (counter) counter.textContent = `${lightboxIdx + 1} / ${lightboxItems.length}`;
+    const nav = lightboxItems.length > 1;
+    $("#lb-prev").style.display = nav ? "" : "none";
+    $("#lb-next").style.display = nav ? "" : "none";
+    if (counter) counter.style.display = nav ? "" : "none";
+  }
+  function closeLightbox() {
+    const lb = $("#cat-lightbox");
+    if (lb) {
+      lb.classList.remove("show");
+      const v = lb.querySelector("video");
+      if (v) v.pause();
+    }
   }
 
   // ---------- ADMIN MODE ----------
@@ -328,10 +390,9 @@
     if (id) {
       const p = products.find(x => x.id === id);
       if (!p) return;
-      $("#edit-title").textContent = "Editar produto · " + p.id;
+      $("#edit-title").textContent = "Editar produto · #" + p.id;
       $("#ef-id").value = p.id;
       $("#ef-id").disabled = true;
-      $("#ef-codigo").value = p.codigo || "";
       $("#ef-name").value = p.name || "";
       $("#ef-cat").value = p.cat || (categories[0] && categories[0].id) || "";
       $("#ef-icon").value = p.icon || "projector";
@@ -437,15 +498,14 @@
     e.preventDefault();
     const id = $("#ef-id").value.trim();
     if (!id) { toast("ID obrigatório", true); return; }
-    // Check for duplicate ID on create
-    if (!editingId && products.some(p => p.id === id)) {
-      toast("Já existe produto com esse ID", true);
+    // ID unique check (always — must never repeat)
+    if (products.some(p => p.id === id && p.id !== editingId)) {
+      toast("Já existe produto com o ID #" + id, true);
       return;
     }
     const catObj = categories.find(c => c.id === $("#ef-cat").value);
     const data = {
       id,
-      codigo: $("#ef-codigo").value.trim(),
       name: $("#ef-name").value.trim(),
       cat: $("#ef-cat").value,
       catLabel: catObj ? catObj.label : "",
@@ -519,8 +579,16 @@
 
     document.addEventListener("keydown", e => {
       if (e.key === "Escape") {
+        const lb = $("#cat-lightbox");
+        if (lb && lb.classList.contains("show")) { closeLightbox(); return; }
         if (!$("#edit-modal").classList.contains("hidden")) closeEdit();
         else if (currentDetail) closeDetail();
+      }
+      const lb = $("#cat-lightbox");
+      if (lb && lb.classList.contains("show") && lightboxItems.length > 1) {
+        if (e.key === "ArrowLeft") { lightboxIdx = (lightboxIdx - 1 + lightboxItems.length) % lightboxItems.length; renderLightbox(); }
+        if (e.key === "ArrowRight") { lightboxIdx = (lightboxIdx + 1) % lightboxItems.length; renderLightbox(); }
+        return;
       }
       if (currentDetail && $("#edit-modal").classList.contains("hidden")) {
         const m = getMedia(currentDetail);

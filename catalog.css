@@ -935,10 +935,19 @@ img { display: block; max-width: 100%; }
 
 /* Admin mode card actions */
 .cat-card.admin-mode { cursor: default; }
-.card-edit-btn {
+.card-actions {
   position: absolute;
   bottom: 12px; right: 12px;
-  width: 36px; height: 36px;
+  display: flex;
+  gap: 6px;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.cat-card:hover .card-actions,
+.cat-card.admin-mode .card-actions { opacity: 1; }
+.card-action-btn {
+  width: 34px; height: 34px;
   border-radius: 50%;
   background: rgba(5, 11, 21, 0.9);
   border: 1px solid var(--border-strong);
@@ -946,28 +955,133 @@ img { display: block; max-width: 100%; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 4;
   cursor: pointer;
   transition: all .2s;
-  opacity: 0;
 }
-.cat-card:hover .card-edit-btn,
-.cat-card.admin-mode .card-edit-btn { opacity: 1; }
-.card-edit-btn:hover { background: var(--led); color: var(--ink-900); border-color: var(--led); }
+.card-action-btn:hover { background: var(--led); color: var(--ink-900); border-color: var(--led); }
+.card-action-btn.danger:hover { background: var(--hot); color: white; border-color: var(--hot); }
 
-/* admin id pill on card */
+/* Customer-visible product ID — bigger, prominent */
 .cat-card-id {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: var(--ink-300);
-  padding: 2px 6px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--led);
+  padding: 3px 8px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.25);
   border-radius: 4px;
   display: inline-block;
   margin-top: 4px;
   align-self: flex-start;
+}
+
+/* Lightbox for fullscreen image/video */
+.cat-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+}
+.cat-lightbox.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.cat-lightbox img, .cat-lightbox video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+}
+.lightbox-close {
+  position: absolute;
+  top: 24px; right: 24px;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+.lightbox-close:hover { background: var(--led); color: var(--ink-900); border-color: var(--led); }
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+.lightbox-nav.prev { left: 24px; }
+.lightbox-nav.next { right: 24px; }
+.lightbox-nav:hover { background: var(--led); color: var(--ink-900); border-color: var(--led); }
+.lightbox-counter {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.1em;
+  background: rgba(0,0,0,0.5);
+  padding: 6px 14px;
+  border-radius: 100px;
+}
+
+/* Hint on main gallery image */
+.gallery-main { cursor: zoom-in; position: relative; }
+.gallery-main::after {
+  content: "";
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'><path d='M15 3h6v6M14 10l7-7M9 21H3v-6M10 14l-7 7'/></svg>") center / 16px no-repeat;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* Visible product ID inside detail modal */
+.modal-id-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--led);
+  padding: 5px 12px;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  width: fit-content;
+}
+.modal-id-pill::before {
+  content: "#";
+  opacity: 0.6;
 }
 
 /* Toast */
