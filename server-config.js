@@ -11,6 +11,6 @@
 // =====================================================================
 
 window.OUTLED_SERVER = {
-  // Endereço absoluto da API no seu servidor
-  API_URL: "https://177.95.115.5/api.php", 
+  // Endereço absoluto da API com o caminho do usuário
+  API_URL: "http://177.95.115.5/~exp/api.php", 
 };
