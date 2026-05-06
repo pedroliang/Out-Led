@@ -961,21 +961,6 @@ img { display: block; max-width: 100%; }
 .card-action-btn:hover { background: var(--led); color: var(--ink-900); border-color: var(--led); }
 .card-action-btn.danger:hover { background: var(--hot); color: white; border-color: var(--hot); }
 
-/* Customer-visible product ID — bigger, prominent */
-.cat-card-id {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--led);
-  padding: 3px 8px;
-  background: rgba(0, 229, 255, 0.08);
-  border: 1px solid rgba(0, 229, 255, 0.25);
-  border-radius: 4px;
-  display: inline-block;
-  margin-top: 4px;
-  align-self: flex-start;
-}
 
 /* Lightbox for fullscreen image/video */
 .cat-lightbox {
@@ -1112,4 +1097,153 @@ body.admin-mode .cat-tag { background: var(--led); color: var(--ink-900); border
 @media (max-width: 700px) {
   .edit-grid { grid-template-columns: 1fr; }
   .edit-form { padding: 22px; }
+}
+
+
+/* ============================================
+   ID LOOKUP BAR
+   ============================================ */
+.cat-id-lookup {
+  padding: 8px 0 18px;
+}
+.id-lookup-form {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 22px;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.06), rgba(0, 229, 255, 0.02));
+  border-radius: 16px;
+  flex-wrap: wrap;
+}
+.id-lookup-icon {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--led);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.id-lookup-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 220px;
+}
+.id-lookup-fields label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--led);
+  font-weight: 600;
+}
+.id-lookup-row {
+  display: flex;
+  align-items: center;
+  background: rgba(5, 11, 21, 0.6);
+  border: 1px solid var(--border-strong);
+  border-radius: 100px;
+  padding: 4px 4px 4px 16px;
+  transition: border-color .2s;
+}
+.id-lookup-row:focus-within { border-color: var(--led); box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15); }
+.id-hash {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--ink-300);
+  margin-right: 6px;
+  font-weight: 600;
+}
+#id-lookup-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 8px 0;
+  outline: none;
+  min-width: 0;
+}
+.id-lookup-btn {
+  background: var(--led);
+  color: var(--ink-900);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 20px;
+  border-radius: 100px;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+  transition: all .2s;
+}
+.id-lookup-btn:hover {
+  background: var(--led-soft);
+  box-shadow: 0 4px 16px -4px var(--led-glow);
+}
+.id-lookup-hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-300);
+  letter-spacing: 0.04em;
+  flex-basis: 100%;
+}
+
+/* ============================================
+   BIG ID PILL on each card
+   ============================================ */
+.cat-card-id-big {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.18), rgba(0, 229, 255, 0.05));
+  border: 1.5px solid var(--led);
+  border-radius: 8px;
+  align-self: flex-start;
+  box-shadow: 0 0 18px -4px rgba(0, 229, 255, 0.4);
+  margin-bottom: 8px;
+}
+.cat-card-id-big .id-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--led-soft);
+  opacity: 0.8;
+  font-weight: 600;
+}
+.cat-card-id-big .id-value {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--led);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+/* highlight pulse for ID lookup result */
+@keyframes idHighlight {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); transform: scale(1); }
+  20% { box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.6), 0 0 40px rgba(0, 229, 255, 0.4); transform: scale(1.02); }
+  60% { box-shadow: 0 0 0 8px rgba(0, 229, 255, 0); transform: scale(1); }
+}
+.cat-card.id-flash {
+  animation: idHighlight 1.6s ease-out;
+  border-color: var(--led) !important;
+}
+
+@media (max-width: 600px) {
+  .id-lookup-form { padding: 14px 16px; gap: 12px; }
+  .id-lookup-fields { min-width: 0; width: 100%; }
+  #id-lookup-input { font-size: 16px; }
+  .cat-card-id-big .id-value { font-size: 16px; }
 }

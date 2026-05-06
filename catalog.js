@@ -163,7 +163,10 @@
       const photoCount = m.photos.length;
       const videoCount = m.videos.length;
       const codigo = "";
-      const idPill = `<div class="cat-card-id">#${escapeHtml(p.id)}</div>`;
+      const idBig = `<div class="cat-card-id-big">
+        <span class="id-label">ID</span>
+        <span class="id-value">#${escapeHtml(p.id)}</span>
+      </div>`;
       const adminActions = adminMode ? `
         <div class="card-actions">
           <button class="card-action-btn" data-edit="${escapeAttr(p.id)}" title="Editar">
@@ -196,9 +199,9 @@
             ${adminActions}
           </div>
           <div class="cat-card-body">
+            ${idBig}
             <div class="cat-card-cat">${escapeHtml(p.catLabel || "")}</div>
             <h3 class="cat-card-name">${escapeHtml(p.name)}</h3>
-            ${idPill}
             <div class="cat-card-prices">
               ${p.oldPrice && p.oldPrice > p.price ? `<span class="cat-price-old">R$ ${fmt(p.oldPrice)}</span>` : ""}
               <span class="cat-price-now"><span class="cur">R$</span>${fmt(p.price)}</span>
@@ -565,6 +568,42 @@
 
     $("#admin-toggle").addEventListener("click", () => setAdminMode(!adminMode));
     $("#add-product-btn").addEventListener("click", () => openEdit(null));
+
+    // ID lookup
+    const idForm = $("#id-lookup-form");
+    if (idForm) {
+      idForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const raw = ($("#id-lookup-input").value || "").trim().replace(/^#/, "");
+        if (!raw) return;
+        const found = products.find(p => String(p.id).toLowerCase() === raw.toLowerCase());
+        if (!found) {
+          toast(`Nenhum produto com ID #${raw}`, true);
+          return;
+        }
+        // clear filters so the card is visible
+        activeFilter = "all";
+        searchTerm = "";
+        $("#search").value = "";
+        try { localStorage.setItem(FILTER_KEY, "all"); } catch (e) {}
+        renderFilters();
+        renderGrid();
+        // open detail modal directly
+        setTimeout(() => {
+          if (adminMode) {
+            // in admin mode, scroll/flash card instead of opening edit
+            const card = document.querySelector(`.cat-card[data-id="${CSS.escape(found.id)}"]`);
+            if (card) {
+              card.scrollIntoView({ behavior: "smooth", block: "center" });
+              card.classList.add("id-flash");
+              setTimeout(() => card.classList.remove("id-flash"), 1700);
+            }
+          } else {
+            openDetail(found.id);
+          }
+        }, 60);
+      });
+    }
 
     // edit modal wiring
     $("#edit-close").addEventListener("click", closeEdit);
