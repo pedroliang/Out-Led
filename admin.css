@@ -191,8 +191,8 @@ img { max-width: 100%; display: block; }
 }
 
 .field select option {
-  background: var(--ink-800);
-  color: var(--paper);
+  background-color: #0a1628; /* --ink-800 */
+  color: #f4f6fa; /* --paper */
 }
 
 .field textarea {
