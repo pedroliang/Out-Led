@@ -88,7 +88,6 @@ function Header({ cartCount, onCartOpen }) {
         <nav className="nav">
           <a href="#produtos">Produtos</a>
           <a href="#categorias">Categorias</a>
-          <a href="catalog.html">Catálogo</a>
           <a href="#como-funciona">Como funciona</a>
           <a href="#sobre">Sobre</a>
           <a href="#faq">FAQ</a>
@@ -521,7 +520,7 @@ function Footer() {
             <ul>
               <li><a href="#produtos">Todos os produtos</a></li>
               <li><a href="#categorias">Categorias</a></li>
-              <li><a href="catalog.html">Catálogo público</a></li>
+              <li><a href="#">Mais vendidos</a></li>
               <li><a href="#">Novos lotes</a></li>
             </ul>
           </div>

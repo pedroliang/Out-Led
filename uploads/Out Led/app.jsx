@@ -88,7 +88,6 @@ function Header({ cartCount, onCartOpen }) {
         <nav className="nav">
           <a href="#produtos">Produtos</a>
           <a href="#categorias">Categorias</a>
-          <a href="catalog.html">Catálogo</a>
           <a href="#como-funciona">Como funciona</a>
           <a href="#sobre">Sobre</a>
           <a href="#faq">FAQ</a>
@@ -143,30 +142,22 @@ function Hero() {
             </div>
           </Reveal>
         </div>
-        <Reveal as="div" className="hero-visual hero-visual--product">
-          <div className="hero-featured-card">
-            <div className="hero-featured-img">
-              <div className="glow"></div>
-              <img src={PRODUCTS[0].img} alt={PRODUCTS[0].name} className="hero-featured-photo" />
-              <div className="product-badges">
-                <span className="badge badge-discount">−{Math.round((1 - PRODUCTS[0].price / PRODUCTS[0].oldPrice) * 100)}%</span>
-                <span className="badge badge-condition">Outlet</span>
-              </div>
-            </div>
-            <div className="hero-featured-body">
-              <div className="product-cat">{PRODUCTS[0].catLabel}</div>
-              <h3 className="product-title">{PRODUCTS[0].name}</h3>
-              <div className="product-price-row">
-                <div className="price-stack">
-                  <span className="price-old">R$ {PRODUCTS[0].oldPrice.toFixed(2).replace('.',',')}</span>
-                  <span className="price-now"><span className="currency">R$</span>{PRODUCTS[0].price.toFixed(2).replace('.',',')}</span>
-                </div>
-              </div>
-            </div>
+        <Reveal as="div" className="hero-visual">
+          <div className="lamp">
+            <div className="lamp-glow"></div>
+            <div className="lamp-bulb"></div>
+          </div>
+          <div className="hero-tag t1">
+            <span className="dot"></span>
+            <span>Projetor 1500W</span>
+          </div>
+          <div className="hero-tag t2">
+            <span className="strike">R$ 390</span>
+            <span className="new">R$ 249</span>
           </div>
           <div className="hero-tag t3">
             <span className="dot"></span>
-            <span>Em estoque</span>
+            <span>3 em estoque</span>
           </div>
         </Reveal>
       </div>
@@ -273,11 +264,7 @@ function ProductCard({ p, onAdd, onView }) {
     <article className="product">
       <div className="product-img">
         <div className="glow"></div>
-        {p.img ? (
-          <img src={p.img} alt={p.name} className="product-photo" loading="lazy" />
-        ) : (
-          <Icon name={p.icon} color={p.color} />
-        )}
+        <Icon name={p.icon} color={p.color} />
         <div className="product-badges">
           <span className="badge badge-discount">−{discount}%</span>
           <span className="badge badge-condition">Outlet</span>
@@ -354,11 +341,7 @@ function QuickView({ product, onClose, onAdd }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>{UI.close}</button>
         <div className="modal-img">
-          {p.img ? (
-            <img src={p.img} alt={p.name} className="modal-photo" />
-          ) : (
-            <Icon name={p.icon} color={p.color} />
-          )}
+          <Icon name={p.icon} color={p.color} />
         </div>
         <div className="modal-body">
           <div className="product-cat">{p.catLabel}</div>
@@ -405,13 +388,7 @@ function CartDrawer({ open, items, onClose, onInc, onDec, onRemove }) {
           ) : (
             items.map(it => (
               <div className="cart-line" key={it.id}>
-                <div className="cart-line-img">
-                  {it.img ? (
-                    <img src={it.img} alt={it.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <Icon name={it.icon} color={it.color}/>
-                  )}
-                </div>
+                <div className="cart-line-img"><Icon name={it.icon} color={it.color}/></div>
                 <div>
                   <div className="cart-line-name">{it.name}</div>
                   <div className="cart-line-price">R$ {it.price.toFixed(2).replace('.',',')}</div>
@@ -521,7 +498,7 @@ function Footer() {
             <ul>
               <li><a href="#produtos">Todos os produtos</a></li>
               <li><a href="#categorias">Categorias</a></li>
-              <li><a href="catalog.html">Catálogo público</a></li>
+              <li><a href="#">Mais vendidos</a></li>
               <li><a href="#">Novos lotes</a></li>
             </ul>
           </div>

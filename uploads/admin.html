@@ -191,49 +191,16 @@
             <input type="number" step="0.01" id="pf-price" required />
           </div>
           <div class="field full">
-            <label>Código interno (opcional)</label>
-            <input type="text" id="pf-codigo" placeholder="ex: VENT-080-001" />
+            <label>URL da imagem</label>
+            <input type="url" id="pf-img" placeholder="https://..." />
           </div>
           <div class="field full">
-            <label>Descrição do produto</label>
-            <textarea id="pf-desc" rows="3" placeholder="Características, voltagem, potência..."></textarea>
+            <label>Descrição</label>
+            <textarea id="pf-desc" rows="2"></textarea>
           </div>
           <div class="field full">
-            <label>Observação do defeito / condição outlet</label>
-            <textarea id="pf-condition" rows="3" placeholder="Ex: arranhão na lateral, sem caixa, faltando 1 parafuso..."></textarea>
-          </div>
-
-          <!-- ============ MEDIA ============ -->
-          <div class="field full media-section">
-            <label>Fotos do produto</label>
-            <div class="media-controls">
-              <button type="button" class="action-btn ghost small" id="add-photo-url-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.72M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.72-1.72"/></svg>
-                Adicionar URL
-              </button>
-              <label class="action-btn ghost small">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                Fazer upload
-                <input type="file" id="pf-photo-upload" accept="image/*" multiple style="display:none" />
-              </label>
-            </div>
-            <div class="media-grid" id="pf-photos-grid"></div>
-          </div>
-
-          <div class="field full media-section">
-            <label>Vídeos do produto</label>
-            <div class="media-controls">
-              <button type="button" class="action-btn ghost small" id="add-video-url-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.72M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.72-1.72"/></svg>
-                Adicionar URL
-              </button>
-              <label class="action-btn ghost small">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                Fazer upload
-                <input type="file" id="pf-video-upload" accept="video/*" multiple style="display:none" />
-              </label>
-            </div>
-            <div class="media-grid" id="pf-videos-grid"></div>
+            <label>Condição (por que está em outlet)</label>
+            <textarea id="pf-condition" rows="2"></textarea>
           </div>
           <div class="field">
             <label>Ícone (fallback SVG)</label>

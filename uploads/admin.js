@@ -109,8 +109,6 @@
   let categories = [];
   let editingProductId = null;
   let editingCategoryId = null;
-  let pfPhotos = []; // current product form photos: array of strings (urls or dataURLs)
-  let pfVideos = []; // current product form videos
 
   // ---------- Toast ----------
   let toastTimer;
@@ -290,8 +288,6 @@
   function openProductModal(editId) {
     populateCategorySelect();
     editingProductId = editId || null;
-    pfPhotos = [];
-    pfVideos = [];
     if (editId) {
       modalTitle.textContent = "Editar produto";
       const p = products.find((x) => x.id === editId);
@@ -299,133 +295,27 @@
       $("#pf-id").value = p.id;
       $("#pf-id").disabled = true;
       $("#pf-name").value = p.name;
-      $("#pf-codigo") && ($("#pf-codigo").value = p.codigo || "");
       $("#pf-cat").value = p.cat;
       $("#pf-oldprice").value = p.oldPrice;
       $("#pf-price").value = p.price;
+      $("#pf-img").value = p.img || "";
       $("#pf-desc").value = p.desc || "";
       $("#pf-condition").value = p.condition || "";
       $("#pf-icon").value = p.icon || "projector";
       $("#pf-color").value = p.color || "";
-      // load media
-      pfPhotos = Array.isArray(p.photos) && p.photos.length ? [...p.photos] : (p.img ? [p.img] : []);
-      pfVideos = Array.isArray(p.videos) ? [...p.videos] : [];
     } else {
       modalTitle.textContent = "Novo produto";
       productForm.reset();
       $("#pf-id").disabled = false;
     }
-    renderMediaGrids();
     productModal.classList.remove("hidden");
   }
 
   function closeProductModal() {
     productModal.classList.add("hidden");
     editingProductId = null;
-    pfPhotos = [];
-    pfVideos = [];
     productForm.reset();
     $("#pf-id").disabled = false;
-  }
-
-  // ---------- Media handling ----------
-  function renderMediaGrids() {
-    const photosGrid = $("#pf-photos-grid");
-    const videosGrid = $("#pf-videos-grid");
-    if (!photosGrid || !videosGrid) return;
-
-    photosGrid.innerHTML = pfPhotos.length === 0
-      ? `<div class="media-empty">Nenhuma foto adicionada</div>`
-      : pfPhotos.map((src, i) => `
-          <div class="media-thumb" data-idx="${i}">
-            <img src="${src}" alt="Foto ${i+1}" />
-            <button type="button" class="media-remove" data-type="photo" data-idx="${i}" title="Remover">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M6 18 18 6"/></svg>
-            </button>
-            ${i === 0 ? '<span class="media-cover">CAPA</span>' : ''}
-          </div>
-        `).join("");
-
-    videosGrid.innerHTML = pfVideos.length === 0
-      ? `<div class="media-empty">Nenhum vídeo adicionado</div>`
-      : pfVideos.map((src, i) => `
-          <div class="media-thumb video" data-idx="${i}">
-            <video src="${src}" muted preload="metadata"></video>
-            <div class="video-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            </div>
-            <button type="button" class="media-remove" data-type="video" data-idx="${i}" title="Remover">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M6 18 18 6"/></svg>
-            </button>
-          </div>
-        `).join("");
-
-    // wire remove
-    [photosGrid, videosGrid].forEach(grid => {
-      grid.querySelectorAll(".media-remove").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const idx = +btn.dataset.idx;
-          if (btn.dataset.type === "photo") pfPhotos.splice(idx, 1);
-          else pfVideos.splice(idx, 1);
-          renderMediaGrids();
-        });
-      });
-    });
-  }
-
-  function fileToDataUrl(file) {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result);
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-  }
-
-  async function handlePhotoUpload(e) {
-    const files = Array.from(e.target.files || []);
-    for (const f of files) {
-      if (!f.type.startsWith("image/")) continue;
-      try {
-        const dataUrl = await fileToDataUrl(f);
-        pfPhotos.push(dataUrl);
-      } catch (err) { /* ignore */ }
-    }
-    e.target.value = "";
-    renderMediaGrids();
-  }
-
-  async function handleVideoUpload(e) {
-    const files = Array.from(e.target.files || []);
-    for (const f of files) {
-      if (!f.type.startsWith("video/")) continue;
-      if (f.size > 25 * 1024 * 1024) {
-        toast(`Vídeo "${f.name}" maior que 25MB. Use uma URL externa.`);
-        continue;
-      }
-      try {
-        const dataUrl = await fileToDataUrl(f);
-        pfVideos.push(dataUrl);
-      } catch (err) { /* ignore */ }
-    }
-    e.target.value = "";
-    renderMediaGrids();
-  }
-
-  function addPhotoUrl() {
-    const url = prompt("URL da foto:");
-    if (url && url.trim()) {
-      pfPhotos.push(url.trim());
-      renderMediaGrids();
-    }
-  }
-
-  function addVideoUrl() {
-    const url = prompt("URL do vídeo (mp4, webm ou link YouTube):");
-    if (url && url.trim()) {
-      pfVideos.push(url.trim());
-      renderMediaGrids();
-    }
   }
 
   function saveProduct(e) {
@@ -434,14 +324,11 @@
     const data = {
       id: $("#pf-id").value.trim(),
       name: $("#pf-name").value.trim(),
-      codigo: $("#pf-codigo") ? $("#pf-codigo").value.trim() : "",
       cat: $("#pf-cat").value,
       catLabel: catObj ? catObj.label : "",
       oldPrice: parseFloat($("#pf-oldprice").value),
       price: parseFloat($("#pf-price").value),
-      img: pfPhotos[0] || undefined, // first photo = thumbnail
-      photos: [...pfPhotos],
-      videos: [...pfVideos],
+      img: $("#pf-img").value.trim() || undefined,
       desc: $("#pf-desc").value.trim(),
       condition: $("#pf-condition").value.trim(),
       icon: $("#pf-icon").value,
@@ -657,16 +544,6 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
     productModal.addEventListener("click", (e) => {
       if (e.target === productModal) closeProductModal();
     });
-
-    // Media handlers
-    const photoUploadEl = $("#pf-photo-upload");
-    const videoUploadEl = $("#pf-video-upload");
-    const addPhotoBtn = $("#add-photo-url-btn");
-    const addVideoBtn = $("#add-video-url-btn");
-    if (photoUploadEl) photoUploadEl.addEventListener("change", handlePhotoUpload);
-    if (videoUploadEl) videoUploadEl.addEventListener("change", handleVideoUpload);
-    if (addPhotoBtn) addPhotoBtn.addEventListener("click", addPhotoUrl);
-    if (addVideoBtn) addVideoBtn.addEventListener("click", addVideoUrl);
 
     // Category modal
     addCategoryBtn.addEventListener("click", () => openCategoryModal());
