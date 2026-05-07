@@ -16,14 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// 1. Configurações do Banco de Dados (Neon PostgreSQL)
-$host = 'ep-flat-moon-ac4ya8nv.sa-east-1.aws.neon.tech';
-$port = '5432';
-$db   = 'neondb';
-$user = 'neondb_owner';
-$pass = 'npg_uYSlNc90HKxQ';
+// 1. Configurações do Banco de Dados
+$host = 'localhost'; // Use 'localhost' ou '177.95.115.5'
+$db   = 'exp_test';
+$user = 'exp_test';
+$pass = 'exp@sollAr26';
+$charset = 'utf8mb4';
 
-$dsn = "pgsql:host=$host;port=$port;dbname=$db;sslmode=require";
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -34,7 +34,7 @@ try {
     $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Erro de conexão com o banco de dados (Neon): ' . $e->getMessage()]);
+    echo json_encode(['error' => 'Erro de conexão com o banco de dados: ' . $e->getMessage()]);
     exit;
 }
 
@@ -47,7 +47,7 @@ switch ($action) {
             $products = $pdo->query("SELECT * FROM products ORDER BY created_at ASC")->fetchAll();
             $categories = $pdo->query("SELECT * FROM categories ORDER BY sort_order ASC")->fetchAll();
             
-            // Converter JSONB para arrays
+            // Converter strings JSON para arrays
             foreach ($products as &$p) {
                 $p['photos'] = json_decode($p['photos'] ?? '[]', true);
                 $p['videos'] = json_decode($p['videos'] ?? '[]', true);
@@ -68,13 +68,10 @@ switch ($action) {
         }
 
         try {
-            $sql = "INSERT INTO products (id, name, codigo, cat, cat_label, old_price, price, img, photos, videos, description, condition, icon, color) 
+            $sql = "INSERT INTO products (id, name, codigo, cat, cat_label, old_price, price, img, photos, videos, description, `condition`, icon, color) 
                     VALUES (:id, :name, :codigo, :cat, :cat_label, :old_price, :price, :img, :photos, :videos, :description, :condition, :icon, :color)
-                    ON CONFLICT (id) DO UPDATE SET 
-                    name=EXCLUDED.name, codigo=EXCLUDED.codigo, cat=EXCLUDED.cat, cat_label=EXCLUDED.cat_label, 
-                    old_price=EXCLUDED.old_price, price=EXCLUDED.price, img=EXCLUDED.img, photos=EXCLUDED.photos, 
-                    videos=EXCLUDED.videos, description=EXCLUDED.description, condition=EXCLUDED.condition, 
-                    icon=EXCLUDED.icon, color=EXCLUDED.color";
+                    ON DUPLICATE KEY UPDATE 
+                    name=:name, codigo=:codigo, cat=:cat, cat_label=:cat_label, old_price=:old_price, price=:price, img=:img, photos=:photos, videos=:videos, description=:description, `condition`=:condition, icon=:icon, color=:color";
             
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
@@ -124,8 +121,8 @@ switch ($action) {
         try {
             $sql = "INSERT INTO categories (id, label, icon, sort_order) 
                     VALUES (:id, :label, :icon, :sort_order)
-                    ON CONFLICT (id) DO UPDATE SET 
-                    label=EXCLUDED.label, icon=EXCLUDED.icon, sort_order=EXCLUDED.sort_order";
+                    ON DUPLICATE KEY UPDATE 
+                    label=:label, icon=:icon, sort_order=:sort_order";
             
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
@@ -154,7 +151,6 @@ switch ($action) {
             echo json_encode(['error' => $e->getMessage()]);
         }
         break;
-
 
     case 'upload':
         if (!isset($_FILES['file'])) {
