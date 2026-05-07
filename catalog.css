@@ -36,6 +36,7 @@ html, body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  color-scheme: dark;
 }
 body {
   background:
@@ -275,6 +276,10 @@ img { display: block; max-width: 100%; }
   transition: all .2s;
 }
 .cat-sort select:hover { border-color: var(--led); }
+.cat-sort select option {
+  background-color: var(--ink-800);
+  color: var(--paper);
+}
 
 /* ============== GRID ============== */
 .cat-main {
@@ -817,6 +822,10 @@ img { display: block; max-width: 100%; }
   font-family: var(--font-body);
   outline: none;
   transition: all .2s;
+}
+.edit-field select option {
+  background-color: var(--ink-800);
+  color: var(--paper);
 }
 .edit-field input:focus,
 .edit-field select:focus,
