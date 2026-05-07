@@ -19,7 +19,6 @@
   },
   "homepage": "https://github.com/pedroliang/Out-Led#readme",
   "dependencies": {
-    "mysql2": "^3.22.3",
     "pg": "^8.20.0"
   }
 }

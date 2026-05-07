@@ -1,9 +1,9 @@
 <?php
 /**
- * OUT LED — API Bridge (MySQL & File Upload)
+ * OUT LED — API Bridge (Neon PostgreSQL & File Upload)
  * =========================================
- * Este script serve como ponte entre o frontend e o banco de dados MySQL,
- * substituindo as funcionalidades do Supabase.
+ * Este script serve como ponte entre o frontend e o banco de dados Neon PostgreSQL,
+ * substituindo as funcionalidades do MySQL e Supabase.
  */
 
 header("Access-Control-Allow-Origin: *");
