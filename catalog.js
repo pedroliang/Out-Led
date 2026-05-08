@@ -23,25 +23,27 @@
   let efPhotos = [];
   let efVideos = [];
 
-  // ---------- Storage ----------
-  function loadData() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        products = Array.isArray(parsed.products) ? parsed.products : [];
-        categories = Array.isArray(parsed.categories) ? parsed.categories : [];
-        if (products.length || categories.length) return;
-      }
-    } catch (e) {}
-    products = (window.OUTLED_PRODUCTS || []).slice();
-    categories = (window.OUTLED_CATEGORIES || []).slice();
-  }
-  function saveData() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ products, categories }));
-    } catch (e) { toast("Erro ao salvar (storage cheio?)", true); }
-  }
+  // ---------- Storage / Data ----------
+async function loadData() {
+  const data = await OutLedStore.loadAll();
+  products = data.products || [];
+  categories = data.categories || [];
+}
+
+async function syncSaveProduct(p) {
+  await OutLedStore.saveProduct(p);
+  // Re-load to ensure sync
+  const data = await OutLedStore.loadAll();
+  products = data.products;
+  categories = data.categories;
+}
+
+async function syncDeleteProduct(id) {
+  await OutLedStore.deleteProduct(id);
+  const data = await OutLedStore.loadAll();
+  products = data.products;
+  categories = data.categories;
+}
 
   // ---------- Helpers ----------
   function fmt(n) { return Number(n || 0).toFixed(2).replace(".", ","); }
@@ -228,14 +230,15 @@
       });
     });
     $$("[data-delete]", grid).forEach(btn => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const id = btn.dataset.delete;
         const p = products.find(x => x.id === id);
         if (!p) return;
         if (!confirm(`Excluir "${p.name}" (#${p.id})? Esta ação não pode ser desfeita.`)) return;
-        products = products.filter(x => x.id !== id);
-        saveData();
+        
+        await syncDeleteProduct(id);
+        
         renderStats();
         renderFilters();
         renderGrid();
@@ -371,7 +374,31 @@
   }
 
   // ---------- ADMIN MODE ----------
-  function setAdminMode(on) {
+  async function ensureAdminCredentials() {
+    if (OutLedStore.hasAdminCredentials && OutLedStore.hasAdminCredentials()) return true;
+    if (!OutLedStore.setAdminCredentials) return true; // store antigo, ignora
+    const url = prompt(
+      "Modo Edição\n\n" +
+      "Cole a connection string admin do Neon (postgresql://neondb_owner:...).\n" +
+      "Ela fica salva só neste aparelho (localStorage) e não vai pra ninguém.\n\n" +
+      "Você só precisa colar uma vez."
+    );
+    if (!url) return false;
+    try {
+      await OutLedStore.setAdminCredentials(url.trim());
+      toast("Credencial admin salva neste aparelho.");
+      return true;
+    } catch (e) {
+      toast("Erro: " + (e.message || e), true);
+      return false;
+    }
+  }
+
+  async function setAdminMode(on) {
+    if (on && OutLedStore.hasAdminCredentials && !OutLedStore.hasAdminCredentials()) {
+      const ok = await ensureAdminCredentials();
+      if (!ok) return; // cancelou — não ativa
+    }
     adminMode = !!on;
     document.body.classList.toggle("admin-mode", adminMode);
     try { localStorage.setItem(ADMIN_KEY, adminMode ? "1" : "0"); } catch (e) {}
@@ -497,7 +524,7 @@
       renderEfMedia();
     }
   }
-  function saveProduct(e) {
+  async function saveProduct(e) {
     e.preventDefault();
     const id = $("#ef-id").value.trim();
     if (!id) { toast("ID obrigatório", true); return; }
@@ -523,26 +550,32 @@
       createdAt: editingId ? (products.find(p => p.id === editingId) || {}).createdAt || Date.now() : Date.now(),
       updatedAt: Date.now(),
     };
-    if (editingId) {
-      const idx = products.findIndex(p => p.id === editingId);
-      if (idx >= 0) products[idx] = { ...products[idx], ...data };
-      toast("Produto atualizado · " + data.id);
-    } else {
-      products.unshift(data);
-      toast("Produto criado · " + data.id);
+    try {
+      if (editingId) {
+        toast("Salvando alterações...");
+        await syncSaveProduct(data);
+        toast("Produto atualizado · " + data.id);
+      } else {
+        toast("Criando produto...");
+        await syncSaveProduct(data);
+        toast("Produto criado · " + data.id);
+      }
+      renderStats();
+      renderFilters();
+      renderGrid();
+      closeEdit();
+    } catch (err) {
+      console.error("[saveProduct]", err);
+      toast("Erro ao salvar: " + (err.message || err), true);
     }
-    saveData();
-    renderStats();
-    renderFilters();
-    renderGrid();
-    closeEdit();
   }
-  function deleteProduct() {
+  async function deleteProduct() {
     if (!editingId) return;
     const p = products.find(x => x.id === editingId);
     if (!confirm(`Excluir produto "${p && p.name}"? Esta ação não pode ser desfeita.`)) return;
-    products = products.filter(x => x.id !== editingId);
-    saveData();
+    
+    await syncDeleteProduct(editingId);
+    
     renderStats();
     renderFilters();
     renderGrid();
@@ -551,12 +584,23 @@
   }
 
   // ---------- Init ----------
-  function init() {
-    loadData();
+  async function init() {
+    await loadData();
     try { activeFilter = localStorage.getItem(FILTER_KEY) || "all"; } catch (e) {}
     try { adminMode = localStorage.getItem(ADMIN_KEY) === "1"; } catch (e) {}
 
-    setAdminMode(adminMode);
+    // Se admin mode estava ativo mas a credencial não está presente,
+    // desliga silenciosamente (sem prompt de credencial no carregamento).
+    if (adminMode && OutLedStore.hasAdminCredentials && !OutLedStore.hasAdminCredentials()) {
+      adminMode = false;
+      try { localStorage.setItem(ADMIN_KEY, "0"); } catch (e) {}
+    }
+
+    // Aplicação do estado inicial sem disparar o prompt
+    document.body.classList.toggle("admin-mode", adminMode);
+    $("#admin-toggle-label").textContent = adminMode ? "Sair do modo edição" : "Modo edição";
+    $("#add-product-btn").classList.toggle("hidden", !adminMode);
+
     renderStats();
     renderFilters();
     renderGrid();

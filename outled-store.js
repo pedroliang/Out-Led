@@ -1,75 +1,77 @@
 // =====================================================================
-// OUT LED — Camada de dados (data store)
+// OUT LED — Camada de dados (Neon HTTP, 100% navegador)
 // =====================================================================
-// Abstração unificada para admin.js e catalog.js.
-// - Se window.OUTLED_SERVER.API_URL está preenchido -> grava/lê via PHP/MySQL.
-// - Caso contrário -> grava/lê em localStorage (modo offline).
+// Este arquivo é o ÚNICO ponto que conversa com o banco. Não usa backend.
+// Funciona direto no GitHub Pages, abrindo conexão HTTP com o Neon.
 //
-// API pública:
+// Duas credenciais:
+//   - PUBLIC (read-only): embutida aqui — todo visitante usa.
+//   - ADMIN (read+write): colada pelo dono no Modo Edição, fica salva
+//     no localStorage só do aparelho dele.
+//
+// API pública (igual antes — não precisa mexer em catalog.js / admin.js):
 //   await OutLedStore.init()
-//   OutLedStore.isRemote()           -> bool
-//   await OutLedStore.loadAll()      -> { products, categories }
+//   OutLedStore.isRemote()                 -> bool (sempre true aqui)
+//   OutLedStore.hasAdminCredentials()      -> bool
+//   OutLedStore.setAdminCredentials(url)   -> Promise<bool>
+//   OutLedStore.clearAdminCredentials()
+//   await OutLedStore.loadAll()
 //   await OutLedStore.saveProduct(p)
 //   await OutLedStore.deleteProduct(id)
-//   await OutLedStore.saveCategory(c)
+//   await OutLedStore.saveCategory(c, sortOrder)
 //   await OutLedStore.deleteCategory(id)
-//   await OutLedStore.uploadPhoto(file)   -> string (URL pública)
-//   await OutLedStore.uploadVideo(file)   -> string (URL pública)
+//   await OutLedStore.uploadPhoto(file)    -> data URL (base64)
+//   await OutLedStore.uploadVideo(file)    -> data URL (base64)
 // =====================================================================
 
 (function () {
   "use strict";
 
-  const LS_PRODUCTS = "outled_products";
-  const LS_CATEGORIES = "outled_categories";
-  const LS_LEGACY_STATE = "outled_admin_state_v1";
+  // ---------- Credencial pública (read-only) ----------
+  // Esta connection string só pode SELECT em products/categories.
+  // Tentativas de INSERT/UPDATE/DELETE são rejeitadas pelo Postgres.
+  const PUBLIC_RO_URL =
+    "postgresql://public_ro:DphLXPru9KybTuYicnpj" +
+    "@ep-flat-moon-ac4ya8nv-pooler.sa-east-1.aws.neon.tech" +
+    "/neondb?sslmode=require";
 
-  // --- Detectar configuração do Servidor ---
-  const cfg = window.OUTLED_SERVER || {};
-  const API_URL = cfg.API_URL || "";
-  const REMOTE = !!API_URL;
-
-  // --- Helpers para localStorage ---
-  function lsGet(key) {
-    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
-    catch (_) { return null; }
+  // ---------- Credencial admin ----------
+  const LS_ADMIN_URL = "outled_admin_db_url";
+  function getAdminUrl() {
+    try { return localStorage.getItem(LS_ADMIN_URL) || ""; }
+    catch (_) { return ""; }
   }
-  function lsSet(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch (_) { /* quota */ }
+  function setAdminUrl(url) {
+    try { localStorage.setItem(LS_ADMIN_URL, url || ""); } catch (_) {}
   }
-
-  function readLocalProducts() {
-    const direct = lsGet(LS_PRODUCTS);
-    if (direct && Array.isArray(direct) && direct.length) return direct;
-    const legacy = lsGet(LS_LEGACY_STATE);
-    if (legacy && Array.isArray(legacy.products) && legacy.products.length) return legacy.products;
-    return Array.isArray(window.OUTLED_PRODUCTS) ? window.OUTLED_PRODUCTS.slice() : [];
-  }
-  function readLocalCategories() {
-    const direct = lsGet(LS_CATEGORIES);
-    if (direct && Array.isArray(direct) && direct.length) return direct;
-    const legacy = lsGet(LS_LEGACY_STATE);
-    if (legacy && Array.isArray(legacy.categories) && legacy.categories.length) return legacy.categories;
-    return Array.isArray(window.OUTLED_CATEGORIES) ? window.OUTLED_CATEGORIES.slice() : [];
-  }
-  function writeLocalProducts(arr) {
-    lsSet(LS_PRODUCTS, arr);
-    const legacy = lsGet(LS_LEGACY_STATE) || {};
-    legacy.products = arr;
-    lsSet(LS_LEGACY_STATE, legacy);
-  }
-  function writeLocalCategories(arr) {
-    lsSet(LS_CATEGORIES, arr);
-    const legacy = lsGet(LS_LEGACY_STATE) || {};
-    legacy.categories = arr;
-    lsSet(LS_LEGACY_STATE, legacy);
+  function clearAdminUrl() {
+    try { localStorage.removeItem(LS_ADMIN_URL); } catch (_) {}
   }
 
-  // --- Mapeamento DB <-> objeto JS ---
+  // ---------- Driver Neon HTTP (carregado via ESM dinâmico) ----------
+  // Faz fetch para o endpoint /sql do Neon. O driver é único globalmente.
+  let neonDriverPromise = null;
+  function loadDriver() {
+    if (!neonDriverPromise) {
+      neonDriverPromise = import(
+        "https://esm.sh/@neondatabase/serverless@0.9.5"
+      );
+    }
+    return neonDriverPromise;
+  }
+
+  async function sqlClient(connStr) {
+    const mod = await loadDriver();
+    return mod.neon(connStr);
+  }
+
+  // ---------- Helpers ----------
+  function toBool(v) { return !!(v && String(v).trim()); }
+
   function dbToProduct(row) {
     return {
       id: row.id,
-      name: row.name,
+      name: row.name || "",
       codigo: row.codigo || "",
       cat: row.cat || "",
       catLabel: row.cat_label || "",
@@ -84,153 +86,169 @@
       color: row.color || "",
     };
   }
-
-  // --- Init ---
-  async function init() {
-    // Nada especial necessário para a API PHP
-    return Promise.resolve();
-  }
-
-  // --- API pública ---
-  async function loadAll() {
-    if (REMOTE) {
-      try {
-        const res = await fetch(`${API_URL}?action=loadAll`);
-        if (!res.ok) {
-           const errData = await res.json().catch(() => ({}));
-           throw new Error(errData.error || "Erro ao carregar dados do servidor");
-        }
-        const data = await res.json();
-        return {
-          products: (data.products || []).map(dbToProduct),
-          categories: (data.categories || []).map(c => ({ id: c.id, label: c.label, icon: c.icon || "projector" })),
-        };
-      } catch (e) {
-        console.error("[OutLedStore] Falha ao conectar com API", e);
-        alert("⚠️ ERRO DE CONEXÃO: " + e.message + "\n\nO site entrará em modo offline.");
-      }
-    }
+  function dbToCategory(row) {
     return {
-      products: readLocalProducts(),
-      categories: readLocalCategories(),
+      id: row.id,
+      label: row.label || "",
+      icon: row.icon || "projector",
     };
   }
 
-  async function saveProduct(p) {
-    if (REMOTE) {
-      const res = await fetch(`${API_URL}?action=saveProduct`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: String(p.id),
-          name: p.name,
-          codigo: p.codigo,
-          cat: p.cat,
-          catLabel: p.catLabel,
-          oldPrice: p.oldPrice,
-          price: p.price,
-          img: p.img,
-          photos: p.photos,
-          videos: p.videos,
-          description: p.desc,
-          condition: p.condition,
-          icon: p.icon,
-          color: p.color
-        })
-      });
-      if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || "Erro ao salvar produto");
-      }
-      return p;
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  // ---------- API pública ----------
+  async function init() {
+    // pré-aquece o driver
+    try { await loadDriver(); } catch (_) {}
+  }
+
+  function isRemote() { return true; }
+
+  function hasAdminCredentials() { return toBool(getAdminUrl()); }
+
+  async function setAdminCredentials(url) {
+    if (!url || !/^postgres(ql)?:\/\//i.test(url)) {
+      throw new Error("Connection string inválida. Cole a string que começa com postgresql:// fornecida pelo Neon.");
     }
-    const list = readLocalProducts();
-    const idx = list.findIndex(x => x.id === p.id);
-    if (idx >= 0) list[idx] = { ...list[idx], ...p };
-    else list.push(p);
-    writeLocalProducts(list);
+    // Testa: precisa conseguir um INSERT/DELETE (vamos validar com um SELECT
+    // simples e uma operação que role-write conseguiria — sem alterar nada).
+    const sql = await sqlClient(url);
+    try {
+      // Validação leve: a role precisa ter permissão pra escrever
+      // em products. Usamos has_table_privilege.
+      const rows = await sql`
+        SELECT has_table_privilege(current_user, 'products', 'INSERT') AS can_write
+      `;
+      if (!rows[0] || !rows[0].can_write) {
+        throw new Error("Esta credencial não tem permissão de escrita. Use a connection string da role 'neondb_owner' (admin).");
+      }
+    } catch (e) {
+      throw new Error("Falha ao validar credencial: " + (e.message || e));
+    }
+    setAdminUrl(url);
+    return true;
+  }
+
+  function clearAdminCredentials() { clearAdminUrl(); }
+
+  async function getReadClient() { return sqlClient(PUBLIC_RO_URL); }
+
+  async function getWriteClient() {
+    const url = getAdminUrl();
+    if (!url) throw new Error("Credencial admin não configurada. Entre em Modo Edição e cole a connection string.");
+    return sqlClient(url);
+  }
+
+  // ---------- loadAll ----------
+  async function loadAll() {
+    try {
+      const sql = await getReadClient();
+      const products = await sql`SELECT * FROM products ORDER BY created_at ASC`;
+      const categories = await sql`SELECT * FROM categories ORDER BY sort_order ASC`;
+      return {
+        products: products.map(dbToProduct),
+        categories: categories.map(dbToCategory),
+      };
+    } catch (e) {
+      console.error("[OutLedStore.loadAll] falha:", e);
+      throw new Error("Não consegui ler do banco Neon: " + (e.message || e));
+    }
+  }
+
+  // ---------- saveProduct (upsert) ----------
+  async function saveProduct(p) {
+    const sql = await getWriteClient();
+    // Casts explícitos para o Postgres conseguir inferir o tipo
+    // mesmo quando o valor é null.
+    await sql`
+      INSERT INTO products (
+        id, name, codigo, cat, cat_label, old_price, price,
+        img, photos, videos, description, condition, icon, color, updated_at
+      ) VALUES (
+        ${String(p.id)}::varchar,
+        ${p.name || ""}::varchar,
+        ${p.codigo || null}::varchar,
+        ${p.cat || null}::varchar,
+        ${p.catLabel || null}::varchar,
+        ${Number(p.oldPrice) || 0}::numeric,
+        ${Number(p.price) || 0}::numeric,
+        ${p.img || null}::text,
+        ${JSON.stringify(p.photos || [])}::jsonb,
+        ${JSON.stringify(p.videos || [])}::jsonb,
+        ${p.desc || null}::text,
+        ${p.condition || null}::varchar,
+        ${p.icon || null}::varchar,
+        ${p.color || null}::varchar,
+        NOW()
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        codigo = EXCLUDED.codigo,
+        cat = EXCLUDED.cat,
+        cat_label = EXCLUDED.cat_label,
+        old_price = EXCLUDED.old_price,
+        price = EXCLUDED.price,
+        img = EXCLUDED.img,
+        photos = EXCLUDED.photos,
+        videos = EXCLUDED.videos,
+        description = EXCLUDED.description,
+        condition = EXCLUDED.condition,
+        icon = EXCLUDED.icon,
+        color = EXCLUDED.color,
+        updated_at = NOW()
+    `;
     return p;
   }
 
   async function deleteProduct(id) {
-    if (REMOTE) {
-      const res = await fetch(`${API_URL}?action=deleteProduct`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id })
-      });
-      if (!res.ok) throw new Error("Erro ao excluir produto no servidor");
-      return;
-    }
-    writeLocalProducts(readLocalProducts().filter(p => p.id !== id));
+    const sql = await getWriteClient();
+    await sql`DELETE FROM products WHERE id = ${String(id)}::varchar`;
   }
 
+  // ---------- saveCategory ----------
   async function saveCategory(c, sortOrder) {
-    if (REMOTE) {
-      const res = await fetch(`${API_URL}?action=saveCategory`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: String(c.id),
-          label: c.label,
-          icon: c.icon,
-          sort_order: sortOrder || 0
-        })
-      });
-      if (!res.ok) throw new Error("Erro ao salvar categoria no servidor");
-      return c;
-    }
-    const list = readLocalCategories();
-    const idx = list.findIndex(x => x.id === c.id);
-    if (idx >= 0) list[idx] = { ...list[idx], ...c };
-    else list.push(c);
-    writeLocalCategories(list);
+    const sql = await getWriteClient();
+    await sql`
+      INSERT INTO categories (id, label, icon, sort_order, updated_at)
+      VALUES (
+        ${String(c.id)}::varchar,
+        ${c.label || ""}::varchar,
+        ${c.icon || null}::varchar,
+        ${Number(sortOrder) || 0}::int,
+        NOW()
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        label = EXCLUDED.label,
+        icon = EXCLUDED.icon,
+        sort_order = EXCLUDED.sort_order,
+        updated_at = NOW()
+    `;
     return c;
   }
 
   async function deleteCategory(id) {
-    if (REMOTE) {
-      const res = await fetch(`${API_URL}?action=deleteCategory`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id })
-      });
-      if (!res.ok) throw new Error("Erro ao excluir categoria no servidor");
-      return;
-    }
-    writeLocalCategories(readLocalCategories().filter(c => c.id !== id));
+    const sql = await getWriteClient();
+    await sql`DELETE FROM categories WHERE id = ${String(id)}::varchar`;
   }
 
-  async function uploadFile(file, prefix) {
-    if (!REMOTE) {
-      return new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result);
-        r.onerror = reject;
-        r.readAsDataURL(file);
-      });
-    }
+  // ---------- Upload (mantém base64 — não tem servidor) ----------
+  async function uploadPhoto(file) { return fileToDataUrl(file); }
+  async function uploadVideo(file) { return fileToDataUrl(file); }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("prefix", prefix);
-
-    const res = await fetch(`${API_URL}?action=upload`, {
-      method: "POST",
-      body: formData
-    });
-    if (!res.ok) throw new Error("Erro no upload do arquivo");
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    return data.url;
-  }
-
-  async function uploadPhoto(file) { return uploadFile(file, "photos"); }
-  async function uploadVideo(file) { return uploadFile(file, "videos"); }
-
+  // ---------- Exposição global ----------
   window.OutLedStore = {
     init,
-    isRemote: () => REMOTE,
+    isRemote,
+    hasAdminCredentials,
+    setAdminCredentials,
+    clearAdminCredentials,
     loadAll,
     saveProduct,
     deleteProduct,
@@ -238,8 +256,5 @@
     deleteCategory,
     uploadPhoto,
     uploadVideo,
-    // helpers para o legacy code
-    _writeLocalProducts: writeLocalProducts,
-    _writeLocalCategories: writeLocalCategories,
   };
 })();

@@ -1,8 +1,9 @@
 {
   "name": "out-led",
   "version": "1.0.0",
-  "description": "",
-  "main": "admin.js",
+  "description": "Catalogo Out-Led - site estatico (GitHub Pages) conectado ao Neon via HTTP",
+  "main": "outled-store.js",
+  "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,12 +14,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/pedroliang/Out-Led/issues"
   },
   "homepage": "https://github.com/pedroliang/Out-Led#readme",
-  "dependencies": {
-    "pg": "^8.20.0"
+  "devDependencies": {
+    "@neondatabase/serverless": "^0.9.5"
   }
 }
