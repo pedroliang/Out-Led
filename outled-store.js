@@ -72,13 +72,13 @@
       name: row.name,
       codigo: row.codigo || "",
       cat: row.cat || "",
-      catLabel: row.cat_label || "",
-      oldPrice: Number(row.old_price) || 0,
+      catLabel: row.catLabel || row.cat_label || "",
+      oldPrice: Number(row.oldPrice || row.old_price) || 0,
       price: Number(row.price) || 0,
       img: row.img || (Array.isArray(row.photos) && row.photos[0]) || null,
       photos: Array.isArray(row.photos) ? row.photos : [],
       videos: Array.isArray(row.videos) ? row.videos : [],
-      desc: row.description || "",
+      desc: row.desc || row.description || "",
       condition: row.condition || "",
       icon: row.icon || "projector",
       color: row.color || "",
@@ -107,7 +107,6 @@
         };
       } catch (e) {
         console.error("[OutLedStore] Falha ao conectar com API", e);
-        alert("⚠️ ERRO DE CONEXÃO: " + e.message + "\n\nO site entrará em modo offline.");
       }
     }
     return {

@@ -191,9 +191,11 @@ img { max-width: 100%; display: block; }
   padding-right: 36px;
 }
 
-.field select option {
-  background-color: #0a1628; /* --ink-800 */
-  color: #f4f6fa; /* --paper */
+.field select option,
+select option {
+  background: #0a1628;
+  color: #f4f6fa;
+  padding: 8px 12px;
 }
 
 .field textarea {

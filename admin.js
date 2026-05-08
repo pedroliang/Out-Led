@@ -1,5 +1,5 @@
-// OUT LED — Admin Panel Logic
-// =============================
+// OUT LED — Admin Panel Logic (Database-backed via OutLedStore)
+// ==============================================================
 
 (function () {
   "use strict";
@@ -14,11 +14,9 @@
   const DEFAULT_USER = "LedADM";
   const DEFAULT_PASS_HASH_PROMISE = sha256("LA321*!");
 
-  // ---------- Storage helpers ----------
+  // ---------- Storage helpers (auth only stays in localStorage) ----------
   const STORAGE_KEYS = {
     auth: "outled_admin_auth",
-    products: "outled_products",
-    categories: "outled_categories",
     session: "outled_session",
   };
 
@@ -31,24 +29,6 @@
   async function setCredentials(user, pass) {
     const hash = await sha256(pass);
     localStorage.setItem(STORAGE_KEYS.auth, JSON.stringify({ user, hash }));
-  }
-
-  function getProducts() {
-    const stored = localStorage.getItem(STORAGE_KEYS.products);
-    return stored ? JSON.parse(stored) : null;
-  }
-
-  function saveProducts(products) {
-    localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(products));
-  }
-
-  function getCategories() {
-    const stored = localStorage.getItem(STORAGE_KEYS.categories);
-    return stored ? JSON.parse(stored) : null;
-  }
-
-  function saveCategories(categories) {
-    localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(categories));
   }
 
   function isSessionActive() {
@@ -109,8 +89,8 @@
   let categories = [];
   let editingProductId = null;
   let editingCategoryId = null;
-  let pfPhotos = []; // current product form photos: array of strings (urls or dataURLs)
-  let pfVideos = []; // current product form videos
+  let pfPhotos = [];
+  let pfVideos = [];
 
   // ---------- Toast ----------
   let toastTimer;
@@ -121,18 +101,17 @@
     toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2800);
   }
 
-  // ---------- Init data ----------
-  function initData() {
-    products = getProducts();
-    if (!products) {
-      // Load defaults from data.js (they might not exist yet on admin page)
+  // ---------- Init data from OutLedStore ----------
+  async function initData() {
+    try {
+      await OutLedStore.init();
+      const data = await OutLedStore.loadAll();
+      products = data.products || [];
+      categories = data.categories || [];
+    } catch (e) {
+      console.error("Error loading data:", e);
       products = window.OUTLED_PRODUCTS || [];
-      saveProducts(products);
-    }
-    categories = getCategories();
-    if (!categories) {
       categories = window.OUTLED_CATEGORIES || [];
-      saveCategories(categories);
     }
   }
 
@@ -143,16 +122,15 @@
     if (creds) {
       return creds.user === user && creds.hash === hash;
     }
-    // Check default credentials
     const defaultHash = await DEFAULT_PASS_HASH_PROMISE;
     return user === DEFAULT_USER && hash === defaultHash;
   }
 
-  function showAdmin(user) {
+  async function showAdmin(user) {
     loginScreen.classList.add("hidden");
     adminPanel.classList.remove("hidden");
     adminUserDisplay.textContent = user;
-    initData();
+    await initData();
     renderStats();
     renderProducts();
     renderCategories();
@@ -238,7 +216,6 @@
         </tr>`;
     }).join("");
 
-    // Event listeners for edit/delete
     productsTbody.querySelectorAll(".edit-btn").forEach((btn) => {
       btn.addEventListener("click", () => openProductModal(btn.dataset.id));
     });
@@ -307,7 +284,6 @@
       $("#pf-condition").value = p.condition || "";
       $("#pf-icon").value = p.icon || "projector";
       $("#pf-color").value = p.color || "";
-      // load media
       pfPhotos = Array.isArray(p.photos) && p.photos.length ? [...p.photos] : (p.img ? [p.img] : []);
       pfVideos = Array.isArray(p.videos) ? [...p.videos] : [];
     } else {
@@ -360,7 +336,6 @@
           </div>
         `).join("");
 
-    // wire remove
     [photosGrid, videosGrid].forEach(grid => {
       grid.querySelectorAll(".media-remove").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -387,8 +362,8 @@
     for (const f of files) {
       if (!f.type.startsWith("image/")) continue;
       try {
-        const dataUrl = await fileToDataUrl(f);
-        pfPhotos.push(dataUrl);
+        const url = await OutLedStore.uploadPhoto(f);
+        pfPhotos.push(url);
       } catch (err) { /* ignore */ }
     }
     e.target.value = "";
@@ -404,8 +379,8 @@
         continue;
       }
       try {
-        const dataUrl = await fileToDataUrl(f);
-        pfVideos.push(dataUrl);
+        const url = await OutLedStore.uploadVideo(f);
+        pfVideos.push(url);
       } catch (err) { /* ignore */ }
     }
     e.target.value = "";
@@ -428,7 +403,7 @@
     }
   }
 
-  function saveProduct(e) {
+  async function saveProduct(e) {
     e.preventDefault();
     const catObj = categories.find((c) => c.id === $("#pf-cat").value);
     const data = {
@@ -439,7 +414,7 @@
       catLabel: catObj ? catObj.label : "",
       oldPrice: parseFloat($("#pf-oldprice").value),
       price: parseFloat($("#pf-price").value),
-      img: pfPhotos[0] || undefined, // first photo = thumbnail
+      img: pfPhotos[0] || undefined,
       photos: [...pfPhotos],
       videos: [...pfVideos],
       desc: $("#pf-desc").value.trim(),
@@ -448,35 +423,45 @@
       color: $("#pf-color").value.trim() || undefined,
     };
 
-    if (editingProductId) {
-      const idx = products.findIndex((p) => p.id === editingProductId);
-      if (idx !== -1) products[idx] = { ...products[idx], ...data };
-      toast("Produto atualizado!");
-    } else {
-      if (products.find((p) => p.id === data.id)) {
-        toast("ID já existe!");
-        return;
+    try {
+      await OutLedStore.saveProduct(data);
+
+      if (editingProductId) {
+        const idx = products.findIndex((p) => p.id === editingProductId);
+        if (idx !== -1) products[idx] = { ...products[idx], ...data };
+        toast("Produto atualizado!");
+      } else {
+        if (products.find((p) => p.id === data.id)) {
+          toast("ID já existe!");
+          return;
+        }
+        products.push(data);
+        toast("Produto adicionado!");
       }
-      products.push(data);
-      toast("Produto adicionado!");
+    } catch (err) {
+      toast("Erro ao salvar: " + err.message);
+      return;
     }
 
-    saveProducts(products);
     renderProducts(productSearch.value);
     renderStats();
     renderCategories();
     closeProductModal();
   }
 
-  function deleteProduct(id) {
+  async function deleteProduct(id) {
     const p = products.find((x) => x.id === id);
     if (!p || !confirm(`Excluir "${p.name}"?`)) return;
-    products = products.filter((x) => x.id !== id);
-    saveProducts(products);
-    renderProducts(productSearch.value);
-    renderStats();
-    renderCategories();
-    toast("Produto excluído.");
+    try {
+      await OutLedStore.deleteProduct(id);
+      products = products.filter((x) => x.id !== id);
+      renderProducts(productSearch.value);
+      renderStats();
+      renderCategories();
+      toast("Produto excluído.");
+    } catch (err) {
+      toast("Erro ao excluir: " + err.message);
+    }
   }
 
   // ---------- Category modal ----------
@@ -505,7 +490,7 @@
     $("#cf-id").disabled = false;
   }
 
-  function saveCategory(e) {
+  async function saveCategory(e) {
     e.preventDefault();
     const data = {
       id: $("#cf-id").value.trim(),
@@ -513,35 +498,45 @@
       icon: $("#cf-icon").value,
     };
 
-    if (editingCategoryId) {
-      const idx = categories.findIndex((c) => c.id === editingCategoryId);
-      if (idx !== -1) categories[idx] = { ...categories[idx], ...data };
-      toast("Categoria atualizada!");
-    } else {
-      if (categories.find((c) => c.id === data.id)) {
-        toast("ID já existe!");
-        return;
+    try {
+      await OutLedStore.saveCategory(data, categories.length);
+
+      if (editingCategoryId) {
+        const idx = categories.findIndex((c) => c.id === editingCategoryId);
+        if (idx !== -1) categories[idx] = { ...categories[idx], ...data };
+        toast("Categoria atualizada!");
+      } else {
+        if (categories.find((c) => c.id === data.id)) {
+          toast("ID já existe!");
+          return;
+        }
+        categories.push(data);
+        toast("Categoria adicionada!");
       }
-      categories.push(data);
-      toast("Categoria adicionada!");
+    } catch (err) {
+      toast("Erro ao salvar: " + err.message);
+      return;
     }
 
-    saveCategories(categories);
     renderCategories();
     renderProducts(productSearch.value);
     renderStats();
     closeCategoryModal();
   }
 
-  function deleteCategory(id) {
+  async function deleteCategory(id) {
     const c = categories.find((x) => x.id === id);
     const count = products.filter((p) => p.cat === id).length;
     if (!c || !confirm(`Excluir "${c.label}"? ${count > 0 ? `(${count} produtos vinculados)` : ""}`)) return;
-    categories = categories.filter((x) => x.id !== id);
-    saveCategories(categories);
-    renderCategories();
-    renderStats();
-    toast("Categoria excluída.");
+    try {
+      await OutLedStore.deleteCategory(id);
+      categories = categories.filter((x) => x.id !== id);
+      renderCategories();
+      renderStats();
+      toast("Categoria excluída.");
+    } catch (err) {
+      toast("Erro ao excluir: " + err.message);
+    }
   }
 
   // ---------- Settings ----------
@@ -610,13 +605,11 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
   async function boot() {
     initTabs();
 
-    // Toggle password visibility
     togglePassBtn.addEventListener("click", () => {
       const type = loginPassInput.type === "password" ? "text" : "password";
       loginPassInput.type = type;
     });
 
-    // Login form
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       loginError.textContent = "";
@@ -631,7 +624,7 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
       const ok = await authenticate(user, pass);
       if (ok) {
         startSession(user);
-        showAdmin(user);
+        await showAdmin(user);
       } else {
         loginError.textContent = "Usuário ou senha incorretos.";
         $(".login-card").classList.add("shake");
@@ -639,17 +632,14 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
       }
     });
 
-    // Logout
     logoutBtn.addEventListener("click", () => {
       showLogin();
     });
 
-    // Product search
     productSearch.addEventListener("input", () => {
       renderProducts(productSearch.value);
     });
 
-    // Product modal
     addProductBtn.addEventListener("click", () => openProductModal());
     modalCloseBtn.addEventListener("click", closeProductModal);
     modalCancelBtn.addEventListener("click", closeProductModal);
@@ -658,7 +648,6 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
       if (e.target === productModal) closeProductModal();
     });
 
-    // Media handlers
     const photoUploadEl = $("#pf-photo-upload");
     const videoUploadEl = $("#pf-video-upload");
     const addPhotoBtn = $("#add-photo-url-btn");
@@ -668,7 +657,6 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
     if (addPhotoBtn) addPhotoBtn.addEventListener("click", addPhotoUrl);
     if (addVideoBtn) addVideoBtn.addEventListener("click", addVideoUrl);
 
-    // Category modal
     addCategoryBtn.addEventListener("click", () => openCategoryModal());
     catModalCloseBtn.addEventListener("click", closeCategoryModal);
     catModalCancelBtn.addEventListener("click", closeCategoryModal);
@@ -677,13 +665,9 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
       if (e.target === categoryModal) closeCategoryModal();
     });
 
-    // Settings
     settingsForm.addEventListener("submit", handleSettings);
-
-    // Export
     exportBtn.addEventListener("click", exportDataJs);
 
-    // Keyboard shortcuts
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         closeProductModal();
@@ -692,21 +676,8 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
     });
 
     // Pular login temporariamente para facilitar o cadastro
-    showAdmin("Acesso Direto");
-    
-    /* 
-    // Auto-login if session is active
-    if (isSessionActive()) {
-      const user = sessionStorage.getItem("outled_user") || "Admin";
-      showAdmin(user);
-    }
-    */
+    await showAdmin("Acesso Direto");
   }
 
-  // Load default data from data.js dynamically so admin panel has initial products
-  const script = document.createElement("script");
-  script.src = "data.js";
-  script.onload = boot;
-  script.onerror = boot; // boot anyway even if data.js fails
-  document.head.appendChild(script);
+  boot();
 })();
