@@ -38,8 +38,7 @@
   // ---------- Credencial admin ----------
   const LS_ADMIN_URL = "outled_admin_db_url";
   function getAdminUrl() {
-    try { return localStorage.getItem(LS_ADMIN_URL) || ""; }
-    catch (_) { return ""; }
+    return "postgresql://neondb_owner:npg_uYSlNc90HKxQ@ep-flat-moon-ac4ya8nv-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
   }
   function setAdminUrl(url) {
     try { localStorage.setItem(LS_ADMIN_URL, url || ""); } catch (_) {}
