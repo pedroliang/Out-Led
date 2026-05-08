@@ -277,8 +277,15 @@ img { display: block; max-width: 100%; }
 }
 .cat-sort select:hover { border-color: var(--led); }
 .cat-sort select option {
-  background-color: var(--ink-800);
-  color: var(--paper);
+  background: #0a1628;
+  color: #f4f6fa;
+}
+
+.edit-field select option,
+select option {
+  background: #0a1628;
+  color: #f4f6fa;
+  padding: 8px 12px;
 }
 
 /* ============== GRID ============== */
@@ -824,8 +831,8 @@ img { display: block; max-width: 100%; }
   transition: all .2s;
 }
 .edit-field select option {
-  background-color: var(--ink-800);
-  color: var(--paper);
+  background: #0a1628;
+  color: #f4f6fa;
 }
 .edit-field input:focus,
 .edit-field select:focus,

@@ -2,7 +2,6 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "outled_admin_state_v1";
   const FILTER_KEY = "outled_catalog_filter";
   const ADMIN_KEY = "outled_catalog_admin";
 
@@ -24,23 +23,17 @@
   let efVideos = [];
 
   // ---------- Storage ----------
-  function loadData() {
+  async function loadData() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        products = Array.isArray(parsed.products) ? parsed.products : [];
-        categories = Array.isArray(parsed.categories) ? parsed.categories : [];
-        if (products.length || categories.length) return;
-      }
-    } catch (e) {}
-    products = (window.OUTLED_PRODUCTS || []).slice();
-    categories = (window.OUTLED_CATEGORIES || []).slice();
-  }
-  function saveData() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ products, categories }));
-    } catch (e) { toast("Erro ao salvar (storage cheio?)", true); }
+      await OutLedStore.init();
+      const data = await OutLedStore.loadAll();
+      products = data.products || [];
+      categories = data.categories || [];
+    } catch (e) {
+      console.error("Error loading data:", e);
+      products = (window.OUTLED_PRODUCTS || []).slice();
+      categories = (window.OUTLED_CATEGORIES || []).slice();
+    }
   }
 
   // ---------- Helpers ----------
@@ -228,14 +221,19 @@
       });
     });
     $$("[data-delete]", grid).forEach(btn => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const id = btn.dataset.delete;
         const p = products.find(x => x.id === id);
         if (!p) return;
         if (!confirm(`Excluir "${p.name}" (#${p.id})? Esta ação não pode ser desfeita.`)) return;
-        products = products.filter(x => x.id !== id);
-        saveData();
+        try {
+          await OutLedStore.deleteProduct(id);
+          products = products.filter(x => x.id !== id);
+        } catch (err) {
+          toast("Erro ao excluir: " + err.message, true);
+          return;
+        }
         renderStats();
         renderFilters();
         renderGrid();
@@ -471,7 +469,7 @@
     const files = Array.from(e.target.files || []);
     for (const f of files) {
       if (!f.type.startsWith("image/")) continue;
-      try { efPhotos.push(await fileToDataUrl(f)); } catch (er) {}
+      try { efPhotos.push(await OutLedStore.uploadPhoto(f)); } catch (er) {}
     }
     e.target.value = "";
     renderEfMedia();
@@ -484,7 +482,7 @@
         toast(`"${f.name}" passa de 25MB. Use URL.`, true);
         continue;
       }
-      try { efVideos.push(await fileToDataUrl(f)); } catch (er) {}
+      try { efVideos.push(await OutLedStore.uploadVideo(f)); } catch (er) {}
     }
     e.target.value = "";
     renderEfMedia();
@@ -497,11 +495,10 @@
       renderEfMedia();
     }
   }
-  function saveProduct(e) {
+  async function saveProduct(e) {
     e.preventDefault();
     const id = $("#ef-id").value.trim();
     if (!id) { toast("ID obrigatório", true); return; }
-    // ID unique check (always — must never repeat)
     if (products.some(p => p.id === id && p.id !== editingId)) {
       toast("Já existe produto com o ID #" + id, true);
       return;
@@ -523,26 +520,36 @@
       createdAt: editingId ? (products.find(p => p.id === editingId) || {}).createdAt || Date.now() : Date.now(),
       updatedAt: Date.now(),
     };
-    if (editingId) {
-      const idx = products.findIndex(p => p.id === editingId);
-      if (idx >= 0) products[idx] = { ...products[idx], ...data };
-      toast("Produto atualizado · " + data.id);
-    } else {
-      products.unshift(data);
-      toast("Produto criado · " + data.id);
+    try {
+      await OutLedStore.saveProduct(data);
+      if (editingId) {
+        const idx = products.findIndex(p => p.id === editingId);
+        if (idx >= 0) products[idx] = { ...products[idx], ...data };
+        toast("Produto atualizado · " + data.id);
+      } else {
+        products.unshift(data);
+        toast("Produto criado · " + data.id);
+      }
+    } catch (err) {
+      toast("Erro ao salvar: " + err.message, true);
+      return;
     }
-    saveData();
     renderStats();
     renderFilters();
     renderGrid();
     closeEdit();
   }
-  function deleteProduct() {
+  async function deleteProduct() {
     if (!editingId) return;
     const p = products.find(x => x.id === editingId);
     if (!confirm(`Excluir produto "${p && p.name}"? Esta ação não pode ser desfeita.`)) return;
-    products = products.filter(x => x.id !== editingId);
-    saveData();
+    try {
+      await OutLedStore.deleteProduct(editingId);
+      products = products.filter(x => x.id !== editingId);
+    } catch (err) {
+      toast("Erro ao excluir: " + err.message, true);
+      return;
+    }
     renderStats();
     renderFilters();
     renderGrid();
@@ -551,8 +558,8 @@
   }
 
   // ---------- Init ----------
-  function init() {
-    loadData();
+  async function init() {
+    await loadData();
     try { activeFilter = localStorage.getItem(FILTER_KEY) || "all"; } catch (e) {}
     try { adminMode = localStorage.getItem(ADMIN_KEY) === "1"; } catch (e) {}
 
@@ -642,15 +649,6 @@
     const params = new URLSearchParams(window.location.search);
     const pid = params.get("p");
     if (pid) setTimeout(() => openDetail(pid), 100);
-
-    window.addEventListener("storage", e => {
-      if (e.key === STORAGE_KEY) {
-        loadData();
-        renderStats();
-        renderFilters();
-        renderGrid();
-      }
-    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
