@@ -136,7 +136,8 @@ async function syncDeleteProduct(id) {
         (p.name || "").toLowerCase().includes(q) ||
         (p.id || "").toLowerCase().includes(q) ||
         (p.desc || "").toLowerCase().includes(q) ||
-        (p.condition || "").toLowerCase().includes(q)
+        (p.condition || "").toLowerCase().includes(q) ||
+        (p.catLabel || "").toLowerCase().includes(q)
       );
     }
     switch (activeSort) {
@@ -407,6 +408,18 @@ async function syncDeleteProduct(id) {
     renderGrid();
   }
 
+  function openLogin() {
+    $("#login-modal").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+    $("#lf-user").focus();
+  }
+
+  function closeLogin() {
+    $("#login-modal").classList.add("hidden");
+    document.body.style.overflow = "";
+    $("#login-form").reset();
+  }
+
   // ---------- Edit / Create ----------
   function populateCatSelect() {
     const sel = $("#ef-cat");
@@ -610,7 +623,13 @@ async function syncDeleteProduct(id) {
     $("#modal-close").addEventListener("click", closeDetail);
     $("#modal-backdrop").addEventListener("click", closeDetail);
 
-    $("#admin-toggle").addEventListener("click", () => setAdminMode(!adminMode));
+    $("#admin-toggle").addEventListener("click", () => {
+      if (!adminMode) {
+        openLogin();
+      } else {
+        setAdminMode(false);
+      }
+    });
     $("#add-product-btn").addEventListener("click", () => openEdit(null));
 
     // ID lookup
@@ -620,34 +639,39 @@ async function syncDeleteProduct(id) {
         e.preventDefault();
         const raw = ($("#id-lookup-input").value || "").trim().replace(/^#/, "");
         if (!raw) return;
-        const found = products.find(p => String(p.id).toLowerCase() === raw.toLowerCase());
-        if (!found) {
-          toast(`Nenhum produto com ID #${raw}`, true);
-          return;
-        }
-        // clear filters so the card is visible
-        activeFilter = "all";
-        searchTerm = "";
-        $("#search").value = "";
+        
+        // Use as general search
+        searchTerm = raw;
+        $("#search").value = raw; // sync with the other input
+        activeFilter = "all"; // clear category filter
         try { localStorage.setItem(FILTER_KEY, "all"); } catch (e) {}
+        
         renderFilters();
         renderGrid();
-        // open detail modal directly
-        setTimeout(() => {
-          if (adminMode) {
-            // in admin mode, scroll/flash card instead of opening edit
-            const card = document.querySelector(`.cat-card[data-id="${CSS.escape(found.id)}"]`);
-            if (card) {
-              card.scrollIntoView({ behavior: "smooth", block: "center" });
-              card.classList.add("id-flash");
-              setTimeout(() => card.classList.remove("id-flash"), 1700);
-            }
-          } else {
-            openDetail(found.id);
-          }
-        }, 60);
+        
+        // Scroll to grid to show results
+        const grid = $("#catalog-grid");
+        if (grid) {
+          grid.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
       });
     }
+
+    // login modal wiring
+    $("#login-close").addEventListener("click", closeLogin);
+    $("#login-backdrop").addEventListener("click", closeLogin);
+    $("#login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const user = $("#lf-user").value.trim();
+      const pass = $("#lf-pass").value.trim();
+      if (user === "LedADM" && pass === "LA321*!") {
+        closeLogin();
+        await setAdminMode(true);
+        toast("Login realizado com sucesso!");
+      } else {
+        toast("Usuário ou senha incorretos", true);
+      }
+    });
 
     // edit modal wiring
     $("#edit-close").addEventListener("click", closeEdit);
@@ -665,6 +689,7 @@ async function syncDeleteProduct(id) {
         const lb = $("#cat-lightbox");
         if (lb && lb.classList.contains("show")) { closeLightbox(); return; }
         if (!$("#edit-modal").classList.contains("hidden")) closeEdit();
+        else if (!$("#login-modal").classList.contains("hidden")) closeLogin();
         else if (currentDetail) closeDetail();
       }
       const lb = $("#cat-lightbox");
