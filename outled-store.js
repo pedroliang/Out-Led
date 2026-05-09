@@ -7,13 +7,13 @@
 // Duas credenciais:
 //   - PUBLIC (read-only): embutida aqui — todo visitante usa.
 //   - ADMIN (read+write): colada pelo dono no Modo Edição, fica salva
-//     no localStorage só do aparelho dele.
+//     no localStorage só do aparelho dele. NUNCA fica no código.
 //
-// API pública (igual antes — não precisa mexer em catalog.js / admin.js):
+// API pública:
 //   await OutLedStore.init()
-//   OutLedStore.isRemote()                 -> bool (sempre true aqui)
-//   OutLedStore.hasAdminCredentials()      -> bool
-//   OutLedStore.setAdminCredentials(url)   -> Promise<bool>
+//   OutLedStore.isRemote()
+//   OutLedStore.hasAdminCredentials()
+//   OutLedStore.setAdminCredentials(url)
 //   OutLedStore.clearAdminCredentials()
 //   await OutLedStore.loadAll()
 //   await OutLedStore.saveProduct(p)
@@ -35,10 +35,12 @@
     "@ep-flat-moon-ac4ya8nv-pooler.sa-east-1.aws.neon.tech" +
     "/neondb?sslmode=require";
 
-  // ---------- Credencial admin ----------
+  // ---------- Credencial admin (APENAS no localStorage do dono) ----------
+  // NUNCA hardcode a connection string admin aqui — qualquer um conseguiria
+  // ler do GitHub e ganhar acesso de escrita ao banco.
   const LS_ADMIN_URL = "outled_admin_db_url";
   function getAdminUrl() {
-    return "postgresql://neondb_owner:npg_uYSlNc90HKxQ@ep-flat-moon-ac4ya8nv-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+    try { return localStorage.getItem(LS_ADMIN_URL) || ""; } catch (_) { return ""; }
   }
   function setAdminUrl(url) {
     try { localStorage.setItem(LS_ADMIN_URL, url || ""); } catch (_) {}
@@ -48,7 +50,6 @@
   }
 
   // ---------- Driver Neon HTTP (carregado via ESM dinâmico) ----------
-  // Faz fetch para o endpoint /sql do Neon. O driver é único globalmente.
   let neonDriverPromise = null;
   function loadDriver() {
     if (!neonDriverPromise) {
@@ -104,7 +105,6 @@
 
   // ---------- API pública ----------
   async function init() {
-    // pré-aquece o driver
     try { await loadDriver(); } catch (_) {}
   }
 
@@ -116,12 +116,8 @@
     if (!url || !/^postgres(ql)?:\/\//i.test(url)) {
       throw new Error("Connection string inválida. Cole a string que começa com postgresql:// fornecida pelo Neon.");
     }
-    // Testa: precisa conseguir um INSERT/DELETE (vamos validar com um SELECT
-    // simples e uma operação que role-write conseguiria — sem alterar nada).
     const sql = await sqlClient(url);
     try {
-      // Validação leve: a role precisa ter permissão pra escrever
-      // em products. Usamos has_table_privilege.
       const rows = await sql`
         SELECT has_table_privilege(current_user, 'products', 'INSERT') AS can_write
       `;
@@ -164,8 +160,6 @@
   // ---------- saveProduct (upsert) ----------
   async function saveProduct(p) {
     const sql = await getWriteClient();
-    // Casts explícitos para o Postgres conseguir inferir o tipo
-    // mesmo quando o valor é null.
     await sql`
       INSERT INTO products (
         id, name, codigo, cat, cat_label, old_price, price,

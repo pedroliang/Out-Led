@@ -5,6 +5,13 @@ node_modules/
 .env.local
 .vercel
 
+# Build / cache
+*.log
+.cache/
+
+# Uploads locais — nunca subir (catálogo armazena tudo no Neon como base64)
+uploads/
+
 # Tool specific files
 .codex/
 .cursor/

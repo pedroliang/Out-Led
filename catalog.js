@@ -182,7 +182,7 @@ async function syncDeleteProduct(id) {
       return `
         <article class="cat-card ${adminMode ? "admin-mode" : ""}" data-id="${escapeAttr(p.id)}">
           <div class="cat-card-img">
-            ${t ? `<img src="${escapeAttr(t)}" alt="${escapeAttr(p.name)}" loading="lazy" />`
+            ${t ? `<img src="${escapeAttr(t)}" alt="${escapeAttr(p.name)}" loading="lazy" decoding="async" />`
                 : `<span class="nophoto">Sem foto</span>`}
             <div class="cat-badges">
               ${disc > 0 ? `<span class="cat-badge discount">−${disc}%</span>` : ""}
@@ -277,7 +277,7 @@ async function syncDeleteProduct(id) {
       const cur = m.all[galleryIndex];
       mainMedia = cur.type === "video"
         ? `<video src="${escapeAttr(cur.src)}" controls autoplay></video>`
-        : `<img src="${escapeAttr(cur.src)}" alt="${escapeAttr(p.name)}" />`;
+        : `<img src="${escapeAttr(cur.src)}" alt="${escapeAttr(p.name)}" decoding="async" />`;
     }
     const navBtns = m.all.length > 1 ? `
       <button class="gallery-nav prev" id="gal-prev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
@@ -289,7 +289,7 @@ async function syncDeleteProduct(id) {
             ${it.type === "video"
               ? `<video src="${escapeAttr(it.src)}" muted preload="metadata"></video>
                  <span class="play-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>`
-              : `<img src="${escapeAttr(it.src)}" alt="" />`}
+              : `<img src="${escapeAttr(it.src)}" alt="" loading="lazy" decoding="async" />`}
           </button>`).join("")}
       </div>` : "";
 

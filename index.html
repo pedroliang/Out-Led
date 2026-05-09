@@ -3,11 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Catálogo Out·Led — Outlet de iluminação LED com transparência total: você vê o defeito antes de comprar." />
+  <meta name="theme-color" content="#050b15" />
+  <meta name="color-scheme" content="dark" />
   <title>Out·Led — Catálogo de Iluminação LED</title>
+
+  <!-- DNS / conexão antecipada com Neon e Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="catalog.css">
+  <link rel="preconnect" href="https://esm.sh" crossorigin>
+  <link rel="preconnect" href="https://ep-flat-moon-ac4ya8nv-pooler.sa-east-1.aws.neon.tech" crossorigin>
+  <link rel="dns-prefetch" href="https://luzsollar.com">
+
+  <!-- Pré-carrega o driver Neon que será importado dinamicamente -->
+  <link rel="modulepreload" href="https://esm.sh/@neondatabase/serverless@0.9.5" crossorigin>
+
+  <!-- Fonte: pesos enxutos (era 11 pesos, agora 6) -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap"></noscript>
+
+  <link rel="stylesheet" href="catalog.min.css">
+  <link rel="preload" as="script" href="outled-store.min.js">
+  <link rel="preload" as="script" href="catalog.min.js">
 </head>
 <body>
 
@@ -240,7 +258,7 @@
   <div id="cat-toast" class="cat-toast"></div>
 
   <!-- Conexão direta com Neon (HTTP) — site 100% estático -->
-  <script src="outled-store.js"></script>
-  <script src="catalog.js"></script>
+  <script src="outled-store.min.js" defer></script>
+  <script src="catalog.min.js" defer></script>
 </body>
 </html>

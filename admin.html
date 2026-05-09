@@ -3,11 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#050b15" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="noindex,nofollow" />
   <title>Out·Led — Painel Admin</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css">
+  <link rel="preconnect" href="https://esm.sh" crossorigin>
+  <link rel="modulepreload" href="https://esm.sh/@neondatabase/serverless@0.9.5" crossorigin>
+
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap"></noscript>
+
+  <link rel="stylesheet" href="admin.min.css">
 </head>
 <body>
 
@@ -307,7 +317,7 @@
   <div id="admin-toast" class="admin-toast"></div>
 
   <!-- Conexão direta com Neon (HTTP) — site 100% estático -->
-  <script src="outled-store.js"></script>
-  <script src="admin.js"></script>
+  <script src="outled-store.min.js" defer></script>
+  <script src="admin.min.js" defer></script>
 </body>
 </html>

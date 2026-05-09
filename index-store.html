@@ -3,22 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Out·Led — Outlet de Iluminação LED</title>
+  <meta name="description" content="Out·Led — Outlet de iluminação LED. Como funciona e perguntas frequentes." />
+  <meta name="theme-color" content="#050b15" />
+  <meta name="color-scheme" content="dark" />
+  <title>Out·Led — Como funciona</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap"></noscript>
+  <link rel="stylesheet" href="catalog.min.css">
+  <style>
+    .info-hero { padding: 72px 0 32px; text-align: center; }
+    .info-hero h1 { font-family: var(--font-display); font-size: clamp(36px, 6vw, 64px); letter-spacing: -.03em; line-height: 1.05; margin-bottom: 18px; }
+    .info-hero h1 em { color: var(--led); font-style: normal; }
+    .info-hero p { color: var(--ink-300); max-width: 640px; margin: 0 auto; font-size: 17px; }
+    .info-section { padding: 48px 0; }
+    .info-section h2 { font-family: var(--font-display); font-size: clamp(26px, 3.4vw, 38px); letter-spacing: -.02em; margin-bottom: 32px; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+    .info-card { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 26px; }
+    .info-card .num { font-family: var(--font-mono); font-size: 12px; color: var(--led); letter-spacing: .18em; }
+    .info-card h3 { font-family: var(--font-display); font-size: 20px; margin: 12px 0 10px; }
+    .info-card p { color: var(--ink-300); font-size: 14.5px; line-height: 1.6; }
+    details.faq-item { border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 10px; background: rgba(255,255,255,.02); }
+    details.faq-item[open] { border-color: var(--border-strong); }
+    details.faq-item summary { cursor: pointer; font-weight: 600; font-size: 16px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    details.faq-item summary::-webkit-details-marker { display: none; }
+    details.faq-item summary::after { content: "+"; color: var(--led); font-size: 22px; font-family: var(--font-mono); transition: transform .25s; }
+    details.faq-item[open] summary::after { content: "−"; }
+    details.faq-item p { color: var(--ink-300); margin-top: 12px; line-height: 1.65; font-size: 14.5px; }
+    .info-cta { display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; border-radius: 100px; background: var(--led); color: var(--ink-900); font-weight: 700; font-family: var(--font-display); margin-top: 24px; transition: transform .15s; text-decoration: none; }
+    .info-cta:hover { transform: translateY(-2px); }
+  </style>
 </head>
 <body>
-  <div id="root"></div>
+  <header class="cat-header">
+    <div class="cat-wrap cat-header-inner">
+      <a href="index.html" class="cat-logo">Out<span class="cat-logo-dot"></span>Led</a>
+      <div class="cat-header-meta">
+        <a href="index.html" class="cat-back-link">← Voltar para o catálogo</a>
+      </div>
+    </div>
+  </header>
 
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <section class="cat-hero info-hero">
+    <div class="cat-wrap">
+      <h1>Como funciona o <em>Out·Led</em></h1>
+      <p>Um outlet transparente: você vê a peça inteira — incluindo o defeito — antes de comprar, e leva pagando bem menos.</p>
+    </div>
+  </section>
 
-  <!-- Conexão direta com Neon (HTTP) — site 100% estático -->
-  <script src="outled-store.js"></script>
-  <script type="text/babel" src="icons.jsx"></script>
-  <script type="text/babel" src="app.jsx"></script>
+  <section class="info-section" id="como-funciona">
+    <div class="cat-wrap">
+      <h2>Como funciona</h2>
+      <div class="info-grid">
+        <div class="info-card">
+          <span class="num">01</span>
+          <h3>Abra o catálogo</h3>
+          <p>Cada produto vem com fotos reais, descrição completa do defeito e o preço outlet — nada escondido.</p>
+        </div>
+        <div class="info-card">
+          <span class="num">02</span>
+          <h3>Confira a condição</h3>
+          <p>Avariazinha estética? Caixa amassada? Tudo está ali, descrito e fotografado. Funcionamento 100% testado.</p>
+        </div>
+        <div class="info-card">
+          <span class="num">03</span>
+          <h3>Reserve e leve</h3>
+          <p>Anote o ID do produto e fale com a gente para reservar. Garantia de 90 dias contra defeito de fabricação.</p>
+        </div>
+        <div class="info-card">
+          <span class="num">04</span>
+          <h3>Estoque limitado</h3>
+          <p>Cada peça aqui é única. Quando vai, vai — então não deixa esfriar.</p>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:32px;">
+        <a href="index.html" class="info-cta">Ver catálogo →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="info-section" id="faq">
+    <div class="cat-wrap">
+      <h2>Perguntas frequentes</h2>
+      <details class="faq-item">
+        <summary>Os produtos funcionam de verdade?</summary>
+        <p>Sim. Todos passam por teste de bancada antes de irem para o outlet. O motivo de estar aqui é sempre estético: caixa danificada, arranhão, marca de manuseio. Nunca defeito funcional.</p>
+      </details>
+      <details class="faq-item">
+        <summary>E se chegar com problema?</summary>
+        <p>Garantia de 90 dias contra defeito de fabricação. É só nos avisar com o ID do produto e a gente troca ou devolve o valor.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Posso reservar uma peça?</summary>
+        <p>Pode. Anote o ID exibido no card do produto e nos chame — a peça fica reservada por 24h.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Como o preço outlet é definido?</summary>
+        <p>Calculamos pela severidade da avaria estética. Quanto mais visível, maior o desconto. O preço "de" é o de tabela do produto novo no varejo.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Vocês entregam?</summary>
+        <p>Sim. Frete grátis para compras acima de R$ 299. Para valores menores, calculamos por CEP.</p>
+      </details>
+    </div>
+  </section>
+
+  <footer class="cat-footer">
+    <div class="cat-wrap cat-footer-inner">
+      <div>
+        <a href="index.html" class="cat-logo small">Out<span class="cat-logo-dot"></span>Led</a>
+        <p>Catálogo público · Outlet de iluminação LED</p>
+      </div>
+      <div class="cat-footer-links">
+        <a href="index.html">Catálogo</a>
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#faq">FAQ</a>
+      </div>
+    </div>
+  </footer>
 </body>
 </html>

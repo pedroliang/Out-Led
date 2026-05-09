@@ -703,10 +703,6 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
     */
   }
 
-  // Load default data from data.js dynamically so admin panel has initial products
-  const script = document.createElement("script");
-  script.src = "data.js";
-  script.onload = boot;
-  script.onerror = boot; // boot anyway even if data.js fails
-  document.head.appendChild(script);
+  // Dados vêm do Neon via OutLedStore — sem precisar carregar data.js
+  boot();
 })();
