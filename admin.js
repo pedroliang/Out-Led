@@ -19,6 +19,7 @@
     auth: "outled_admin_auth",
     products: "outled_products",
     categories: "outled_categories",
+    icons: "outled_icons",
     session: "outled_session",
   };
 
@@ -49,6 +50,15 @@
 
   function saveCategories(categories) {
     localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(categories));
+  }
+
+  function getIcons() {
+    const stored = localStorage.getItem(STORAGE_KEYS.icons);
+    return stored ? JSON.parse(stored) : null;
+  }
+
+  function saveIcons(iconsList) {
+    localStorage.setItem(STORAGE_KEYS.icons, JSON.stringify(iconsList));
   }
 
   function isSessionActive() {
@@ -107,8 +117,10 @@
   // ---------- State ----------
   let products = [];
   let categories = [];
+  let icons = [];
   let editingProductId = null;
   let editingCategoryId = null;
+  let editingIconId = null;
   let pfPhotos = []; // current product form photos: array of strings (urls or dataURLs)
   let pfVideos = []; // current product form videos
 
@@ -134,6 +146,22 @@
       categories = window.OUTLED_CATEGORIES || [];
       saveCategories(categories);
     }
+    icons = getIcons();
+    if (!icons) {
+      icons = [
+        { id: "projector", label: "Projetor" },
+        { id: "projector-color", label: "Projetor Colorido" },
+        { id: "fan", label: "Ventilador" },
+        { id: "strip", label: "Fita LED" },
+        { id: "neon", label: "Neon" },
+        { id: "bulb", label: "Lâmpada" },
+        { id: "linear", label: "Linear" },
+        { id: "plafon", label: "Plafon" },
+        { id: "spike", label: "Espeto" },
+        { id: "marker", label: "Balizador" }
+      ];
+      saveIcons(icons);
+    }
   }
 
   // ---------- Auth ----------
@@ -156,6 +184,7 @@
     renderStats();
     renderProducts();
     renderCategories();
+    populateIconSelects();
   }
 
   function showLogin() {
@@ -287,8 +316,17 @@
     sel.innerHTML = categories.map((c) => `<option value="${c.id}">${c.label}</option>`).join("");
   }
 
+  function populateIconSelects() {
+    const pfIconSel = $("#pf-icon");
+    const cfIconSel = $("#cf-icon");
+    const optionsHtml = icons.map((icon) => `<option value="${icon.id}">${icon.label}</option>`).join("");
+    if (pfIconSel) pfIconSel.innerHTML = optionsHtml;
+    if (cfIconSel) cfIconSel.innerHTML = optionsHtml;
+  }
+
   function openProductModal(editId) {
     populateCategorySelect();
+    populateIconSelects();
     editingProductId = editId || null;
     pfPhotos = [];
     pfVideos = [];
@@ -480,20 +518,36 @@
   }
 
   // ---------- Category modal ----------
-  function openCategoryModal(editId) {
-    editingCategoryId = editId || null;
-    if (editId) {
-      catModalTitle.textContent = "Editar categoria";
-      const c = categories.find((x) => x.id === editId);
-      if (!c) return;
-      $("#cf-id").value = c.id;
-      $("#cf-id").disabled = true;
-      $("#cf-label").value = c.label;
-      $("#cf-icon").value = c.icon || "projector";
+  function openCategoryModal(editId, isIcon = false) {
+    if (isIcon) {
+      editingIconId = editId || null;
+      catModalTitle.textContent = editId ? "Editar Ícone" : "Novo Ícone";
+      $("#cf-icon").parentElement.style.display = "none";
+      if (editId) {
+        const icon = icons.find((x) => x.id === editId);
+        if (!icon) return;
+        $("#cf-id").value = icon.id;
+        $("#cf-id").disabled = true;
+        $("#cf-label").value = icon.label;
+      } else {
+        categoryForm.reset();
+        $("#cf-id").disabled = false;
+      }
     } else {
-      catModalTitle.textContent = "Nova categoria";
-      categoryForm.reset();
-      $("#cf-id").disabled = false;
+      editingCategoryId = editId || null;
+      catModalTitle.textContent = editId ? "Editar categoria" : "Nova categoria";
+      $("#cf-icon").parentElement.style.display = "block";
+      if (editId) {
+        const c = categories.find((x) => x.id === editId);
+        if (!c) return;
+        $("#cf-id").value = c.id;
+        $("#cf-id").disabled = true;
+        $("#cf-label").value = c.label;
+        $("#cf-icon").value = c.icon || "projector";
+      } else {
+        categoryForm.reset();
+        $("#cf-id").disabled = false;
+      }
     }
     categoryModal.classList.remove("hidden");
   }
@@ -501,12 +555,39 @@
   function closeCategoryModal() {
     categoryModal.classList.add("hidden");
     editingCategoryId = null;
+    editingIconId = null;
     categoryForm.reset();
     $("#cf-id").disabled = false;
+    $("#cf-icon").parentElement.style.display = "block";
   }
 
   function saveCategory(e) {
     e.preventDefault();
+    
+    if (editingIconId !== null || catModalTitle.textContent.includes("Ícone")) {
+      const data = {
+        id: $("#cf-id").value.trim(),
+        label: $("#cf-label").value.trim(),
+      };
+      
+      if (editingIconId) {
+        const idx = icons.findIndex((i) => i.id === editingIconId);
+        if (idx !== -1) icons[idx] = { ...icons[idx], ...data };
+        toast("Ícone atualizado!");
+      } else {
+        if (icons.find((i) => i.id === data.id)) {
+          toast("ID já existe!");
+          return;
+        }
+        icons.push(data);
+        toast("Ícone adicionado!");
+      }
+      saveIcons(icons);
+      populateIconSelects();
+      closeCategoryModal();
+      return;
+    }
+
     const data = {
       id: $("#cf-id").value.trim(),
       label: $("#cf-label").value.trim(),
@@ -528,6 +609,7 @@
 
     saveCategories(categories);
     renderCategories();
+    populateCategorySelect();
     renderProducts(productSearch.value);
     renderStats();
     closeCategoryModal();
@@ -540,8 +622,18 @@
     categories = categories.filter((x) => x.id !== id);
     saveCategories(categories);
     renderCategories();
+    populateCategorySelect();
     renderStats();
     toast("Categoria excluída.");
+  }
+
+  function deleteIcon(id) {
+    const icon = icons.find((x) => x.id === id);
+    if (!icon || !confirm(`Excluir ícone "${icon.label}"?`)) return;
+    icons = icons.filter((x) => x.id !== id);
+    saveIcons(icons);
+    populateIconSelects();
+    toast("Ícone excluído.");
   }
 
   // ---------- Settings ----------
@@ -677,6 +769,40 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
       if (e.target === categoryModal) closeCategoryModal();
     });
 
+    // Inline Category actions in Product Modal
+    const addCatInlineBtn = $("#add-cat-inline");
+    const editCatInlineBtn = $("#edit-cat-inline");
+    const delCatInlineBtn = $("#del-cat-inline");
+    
+    if (addCatInlineBtn) addCatInlineBtn.addEventListener("click", () => openCategoryModal());
+    if (editCatInlineBtn) editCatInlineBtn.addEventListener("click", () => {
+      const selectedId = $("#pf-cat").value;
+      if (selectedId) openCategoryModal(selectedId);
+      else toast("Selecione uma categoria para editar.");
+    });
+    if (delCatInlineBtn) delCatInlineBtn.addEventListener("click", () => {
+      const selectedId = $("#pf-cat").value;
+      if (selectedId) deleteCategory(selectedId);
+      else toast("Selecione uma categoria para excluir.");
+    });
+
+    // Inline Icon actions in Product Modal
+    const addIconInlineBtn = $("#add-icon-inline");
+    const editIconInlineBtn = $("#edit-icon-inline");
+    const delIconInlineBtn = $("#del-icon-inline");
+    
+    if (addIconInlineBtn) addIconInlineBtn.addEventListener("click", () => openCategoryModal(null, true));
+    if (editIconInlineBtn) editIconInlineBtn.addEventListener("click", () => {
+      const selectedId = $("#pf-icon").value;
+      if (selectedId) openCategoryModal(selectedId, true);
+      else toast("Selecione um ícone para editar.");
+    });
+    if (delIconInlineBtn) delIconInlineBtn.addEventListener("click", () => {
+      const selectedId = $("#pf-icon").value;
+      if (selectedId) deleteIcon(selectedId);
+      else toast("Selecione um ícone para excluir.");
+    });
+
     // Settings
     settingsForm.addEventListener("submit", handleSettings);
 
@@ -693,14 +819,6 @@ window.OUTLED_CATEGORIES = ${categoriesStr};
 
     // Pular login temporariamente para facilitar o cadastro
     showAdmin("Acesso Direto");
-    
-    /* 
-    // Auto-login if session is active
-    if (isSessionActive()) {
-      const user = sessionStorage.getItem("outled_user") || "Admin";
-      showAdmin(user);
-    }
-    */
   }
 
   // Dados vêm do Neon via OutLedStore — sem precisar carregar data.js

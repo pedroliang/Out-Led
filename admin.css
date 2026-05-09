@@ -1027,3 +1027,38 @@ img { max-width: 100%; display: block; }
   background: var(--hot);
   border-color: var(--hot);
 }
+
+/* ============================================
+   SELECT WITH ACTIONS
+   ============================================ */
+.select-with-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.select-with-actions select {
+  flex: 1;
+}
+.inline-action-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.04);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-300);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.inline-action-btn:hover {
+  border-color: var(--led);
+  color: var(--led);
+  background: rgba(0, 229, 255, 0.06);
+}
+.inline-action-btn.del:hover {
+  border-color: var(--hot);
+  color: var(--hot);
+  background: rgba(255, 94, 58, 0.08);
+}

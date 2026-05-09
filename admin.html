@@ -190,7 +190,18 @@
           </div>
           <div class="field">
             <label>Categoria</label>
-            <select id="pf-cat" required></select>
+            <div class="select-with-actions">
+              <select id="pf-cat" required></select>
+              <button type="button" class="inline-action-btn" id="add-cat-inline" title="Nova Categoria">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+              <button type="button" class="inline-action-btn" id="edit-cat-inline" title="Editar Categoria">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button type="button" class="inline-action-btn del" id="del-cat-inline" title="Excluir Categoria">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+              </button>
+            </div>
           </div>
           <div class="field">
             <label>Preço original (R$)</label>
@@ -247,18 +258,18 @@
           </div>
           <div class="field">
             <label>Ícone (fallback SVG)</label>
-            <select id="pf-icon">
-              <option value="projector">Projetor</option>
-              <option value="projector-color">Projetor Colorido</option>
-              <option value="fan">Ventilador</option>
-              <option value="strip">Fita LED</option>
-              <option value="neon">Neon</option>
-              <option value="bulb">Lâmpada</option>
-              <option value="linear">Linear</option>
-              <option value="plafon">Plafon</option>
-              <option value="spike">Espeto</option>
-              <option value="marker">Balizador</option>
-            </select>
+            <div class="select-with-actions">
+              <select id="pf-icon"></select>
+              <button type="button" class="inline-action-btn" id="add-icon-inline" title="Novo Ícone">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+              <button type="button" class="inline-action-btn" id="edit-icon-inline" title="Editar Ícone">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button type="button" class="inline-action-btn del" id="del-icon-inline" title="Excluir Ícone">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+              </button>
+            </div>
           </div>
           <div class="field">
             <label>Cor (hex, opcional)</label>

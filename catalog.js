@@ -98,7 +98,6 @@ async function syncDeleteProduct(id) {
       <div class="cat-stat"><div class="v">${total}</div><div class="l">Produtos</div></div>
       <div class="cat-stat"><div class="v">${cats}</div><div class="l">Categorias</div></div>
       <div class="cat-stat"><div class="v led">−${avgDisc}%</div><div class="l">Desconto médio</div></div>
-      <div class="cat-stat"><div class="v led">R$ ${fmt(totalSaved)}</div><div class="l">Economia total</div></div>
     `;
   }
 
