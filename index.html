@@ -26,6 +26,37 @@
   <link rel="stylesheet" href="catalog.min.css">
   <link rel="preload" as="script" href="outled-store.min.js">
   <link rel="preload" as="script" href="catalog.min.js">
+  <style>
+    .select-with-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .select-with-actions select {
+      flex: 1;
+    }
+    .inline-action-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-strong);
+      color: var(--ink-300);
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .inline-action-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--led);
+    }
+    .inline-action-btn.danger:hover {
+      color: #ff4d4d;
+    }
+  </style>
 </head>
 <body>
 
@@ -164,21 +195,23 @@
           </div>
           <div class="edit-field">
             <label>Categoria *</label>
-            <select id="ef-cat" required></select>
+            <div class="select-with-actions">
+              <select id="ef-cat" required></select>
+              <button type="button" class="inline-action-btn" id="add-cat-inline" title="Adicionar Categoria">+</button>
+              <button type="button" class="inline-action-btn" id="edit-cat-inline" title="Editar Categoria">✎</button>
+              <button type="button" class="inline-action-btn danger" id="delete-cat-inline" title="Excluir Categoria">🗑</button>
+            </div>
           </div>
           <div class="edit-field">
             <label>Ícone (fallback)</label>
-            <select id="ef-icon">
-              <option value="projector">Projetor</option>
-              <option value="fan">Ventilador</option>
-              <option value="bulb">Lâmpada</option>
-              <option value="strip">Fita LED</option>
-              <option value="neon">Neon</option>
-              <option value="linear">Linear</option>
-              <option value="plafon">Plafon</option>
-              <option value="spike">Espeto</option>
-              <option value="marker">Balizador</option>
-            </select>
+            <div class="select-with-actions">
+              <select id="ef-icon">
+                <!-- Preenchido por JS -->
+              </select>
+              <button type="button" class="inline-action-btn" id="add-icon-inline" title="Adicionar Ícone">+</button>
+              <button type="button" class="inline-action-btn" id="edit-icon-inline" title="Editar Ícone">✎</button>
+              <button type="button" class="inline-action-btn danger" id="delete-icon-inline" title="Excluir Ícone">🗑</button>
+            </div>
           </div>
           <div class="edit-field">
             <label>Preço antigo (R$) *</label>
@@ -229,6 +262,36 @@
     </div>
   </div>
 
+  <!-- ============== CATEGORY MODAL ============== -->
+  <div class="cat-modal hidden" id="category-modal">
+    <div class="cat-modal-backdrop" id="category-backdrop"></div>
+    <div class="cat-modal-panel" id="category-panel" style="grid-template-columns:1fr;max-width:400px;">
+      <button class="cat-modal-close" id="category-close" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M6 18 18 6"/></svg>
+      </button>
+      <form id="category-form" class="edit-form">
+        <h2 id="cat-modal-title">Nova categoria</h2>
+        <div class="edit-grid">
+          <div class="edit-field full">
+            <label>ID (slug único)</label>
+            <input type="text" id="cf-id" required placeholder="ex: projetores" />
+          </div>
+          <div class="edit-field full">
+            <label>Nome (exibição)</label>
+            <input type="text" id="cf-label" required placeholder="ex: Projetores" />
+          </div>
+          <div class="edit-field full" id="cf-icon-field">
+            <label>Ícone</label>
+            <input type="text" id="cf-icon" placeholder="ex: projector" />
+          </div>
+        </div>
+        <div class="edit-actions" style="margin-top:20px;">
+          <button type="submit" class="ef-btn primary" style="width:100%">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ============== LOGIN MODAL ============== -->
   <div class="cat-modal hidden" id="login-modal">
     <div class="cat-modal-backdrop" id="login-backdrop"></div>
@@ -259,6 +322,6 @@
 
   <!-- Conexão direta com Neon (HTTP) — site 100% estático -->
   <script src="outled-store.min.js" defer></script>
-  <script src="catalog.min.js" defer></script>
+  <script src="catalog.js" defer></script>
 </body>
 </html>

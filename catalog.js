@@ -24,10 +24,27 @@
   let efVideos = [];
 
   // ---------- Storage / Data ----------
+  let icons = [
+    { id: "projector", label: "Projetor" },
+    { id: "fan", label: "Ventilador" },
+    { id: "bulb", label: "Lâmpada" },
+    { id: "strip", label: "Fita LED" },
+    { id: "neon", label: "Neon" },
+    { id: "linear", label: "Linear" },
+    { id: "plafon", label: "Plafon" },
+    { id: "spike", label: "Espeto" },
+    { id: "marker", label: "Balizador" },
+  ];
+
 async function loadData() {
   const data = await OutLedStore.loadAll();
   products = data.products || [];
   categories = data.categories || [];
+  
+  const savedIcons = localStorage.getItem("outled_icons");
+  if (savedIcons) {
+    icons = JSON.parse(savedIcons);
+  }
 }
 
 async function syncSaveProduct(p) {
@@ -426,6 +443,7 @@ async function syncDeleteProduct(id) {
   }
   function openEdit(id) {
     populateCatSelect();
+    populateIconSelect();
     editingId = id || null;
     efPhotos = [];
     efVideos = [];
@@ -464,6 +482,111 @@ async function syncDeleteProduct(id) {
     editingId = null;
     efPhotos = [];
     efVideos = [];
+  }
+
+  function populateIconSelect() {
+    const sel = $("#ef-icon");
+    if (sel) {
+      sel.innerHTML = icons.map(i => `<option value="${escapeAttr(i.id)}">${escapeHtml(i.label)}</option>`).join("");
+    }
+  }
+
+  let editingIconId = null;
+
+  function openCategoryModal(editId, isIcon = false) {
+    const titleEl = $("#cat-modal-title");
+    const idField = $("#cf-id");
+    const labelField = $("#cf-label");
+    const iconField = $("#cf-icon-field");
+    const form = $("#category-form");
+
+    if (isIcon) {
+      editingIconId = editId || null;
+      titleEl.textContent = editId ? "Editar Ícone" : "Novo Ícone";
+      iconField.style.display = "none";
+      if (editId) {
+        const icon = icons.find(x => x.id === editId);
+        if (!icon) return;
+        idField.value = icon.id;
+        idField.disabled = true;
+        labelField.value = icon.label;
+      } else {
+        form.reset();
+        idField.disabled = false;
+      }
+    } else {
+      editingIconId = null;
+      titleEl.textContent = editId ? "Editar Categoria" : "Nova Categoria";
+      iconField.style.display = "";
+      if (editId) {
+        const cat = categories.find(x => x.id === editId);
+        if (!cat) return;
+        idField.value = cat.id;
+        idField.disabled = true;
+        labelField.value = cat.label;
+        $("#cf-icon").value = cat.icon || "projector";
+      } else {
+        form.reset();
+        idField.disabled = false;
+      }
+    }
+    $("#category-modal").classList.remove("hidden");
+  }
+
+  function closeCategoryModal() {
+    $("#category-modal").classList.add("hidden");
+    $("#category-form").reset();
+  }
+
+  async function saveCategoryLocal(e) {
+    e.preventDefault();
+    const title = $("#cat-modal-title").textContent;
+    const isIcon = title.includes("Ícone");
+    const idField = $("#cf-id");
+    const labelField = $("#cf-label");
+
+    const id = idField.value.trim();
+    const label = labelField.value.trim();
+
+    if (isIcon) {
+      if (editingIconId) {
+        const icon = icons.find(x => x.id === editingIconId);
+        if (icon) icon.label = label;
+      } else {
+        if (icons.some(x => x.id === id)) {
+          toast("Já existe um ícone com esse ID", true);
+          return;
+        }
+        icons.push({ id, label });
+      }
+      localStorage.setItem("outled_icons", JSON.stringify(icons));
+      populateIconSelect();
+      toast("Ícone salvo!");
+    } else {
+      const icon = $("#cf-icon").value.trim() || "projector";
+      const catData = { id, label, icon };
+
+      try {
+        if (title.includes("Editar")) {
+          await OutLedStore.saveCategory(catData);
+          toast("Categoria atualizada!");
+        } else {
+          if (categories.some(x => x.id === id)) {
+            toast("Já existe uma categoria com esse ID", true);
+            return;
+          }
+          await OutLedStore.saveCategory(catData);
+          toast("Categoria criada!");
+        }
+        const data = await OutLedStore.loadAll();
+        categories = data.categories || [];
+        populateCatSelect();
+      } catch (err) {
+        toast("Erro ao salvar categoria: " + err.message, true);
+        return;
+      }
+    }
+    closeCategoryModal();
   }
   function renderEfMedia() {
     const ph = $("#ef-photos-grid");
@@ -682,6 +805,56 @@ async function syncDeleteProduct(id) {
     $("#ef-video-upload").addEventListener("change", handleVideoFile);
     $("#ef-add-photo-url").addEventListener("click", () => addUrl("photo"));
     $("#ef-add-video-url").addEventListener("click", () => addUrl("video"));
+
+    // Inline actions for categories and icons
+    $("#add-cat-inline").addEventListener("click", () => openCategoryModal(null, false));
+    $("#edit-cat-inline").addEventListener("click", () => {
+      const selectedId = $("#ef-cat").value;
+      if (selectedId) openCategoryModal(selectedId, false);
+      else toast("Selecione uma categoria para editar", true);
+    });
+    $("#delete-cat-inline").addEventListener("click", async () => {
+      const selectedId = $("#ef-cat").value;
+      if (!selectedId) { toast("Selecione uma categoria para excluir", true); return; }
+      const cat = categories.find(x => x.id === selectedId);
+      if (confirm(`Excluir categoria "${cat && cat.label}"?`)) {
+        try {
+          await OutLedStore.deleteCategory(selectedId);
+          toast("Categoria excluída!");
+          const data = await OutLedStore.loadAll();
+          categories = data.categories || [];
+          populateCatSelect();
+        } catch (err) {
+          toast("Erro ao excluir: " + err.message, true);
+        }
+      }
+    });
+
+    $("#add-icon-inline").addEventListener("click", () => openCategoryModal(null, true));
+    $("#edit-icon-inline").addEventListener("click", () => {
+      const selectedId = $("#ef-icon").value;
+      if (selectedId) openCategoryModal(selectedId, true);
+      else toast("Selecione um ícone para editar", true);
+    });
+    $("#delete-icon-inline").addEventListener("click", () => {
+      const selectedId = $("#ef-icon").value;
+      if (!selectedId) { toast("Selecione um ícone para excluir", true); return; }
+      const icon = icons.find(x => x.id === selectedId);
+      if (confirm(`Excluir ícone "${icon && icon.label}"?`)) {
+        icons = icons.filter(x => x.id !== selectedId);
+        localStorage.setItem("outled_icons", JSON.stringify(icons));
+        populateIconSelect();
+        toast("Ícone excluído!");
+      }
+    });
+
+    // Category modal events
+    const catClose = $("#category-close");
+    if (catClose) catClose.addEventListener("click", closeCategoryModal);
+    const catBackdrop = $("#category-backdrop");
+    if (catBackdrop) catBackdrop.addEventListener("click", closeCategoryModal);
+    const catForm = $("#category-form");
+    if (catForm) catForm.addEventListener("submit", saveCategoryLocal);
 
     document.addEventListener("keydown", e => {
       if (e.key === "Escape") {
