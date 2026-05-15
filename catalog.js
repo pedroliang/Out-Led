@@ -2,21 +2,40 @@
 (function () {
   "use strict";
 
-  // Configuração do Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyAvI_18-FNtGjBXjP51eYnVZU1qO2aYsyE",
-    authDomain: "centralux2026.firebaseapp.com",
-    projectId: "centralux2026",
-    storageBucket: "centralux2026.firebasestorage.app",
-    messagingSenderId: "872877990274",
-    appId: "1:872877990274:web:99c556811906080571af9b",
-    measurementId: "G-SGDS6CN6Z2"
-  };
+  // Configuração do Cloudinary
+  const CLOUD_NAME = "di2q3lieh";
+  const UPLOAD_PRESET = "OUTLED";
 
-  let storage;
-  if (typeof firebase !== 'undefined') {
-    firebase.initializeApp(firebaseConfig);
-    storage = firebase.storage();
+  function uploadToCloudinary(file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`);
+      
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+        }
+      });
+      
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const response = JSON.parse(xhr.responseText);
+          resolve(response.secure_url);
+        } else {
+          reject(new Error("Upload falhou"));
+        }
+      });
+      
+      xhr.addEventListener("error", () => reject(new Error("Erro na rede")));
+      
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+      formData.append("resource_type", "auto");
+      
+      xhr.send(formData);
+    });
   }
 
   const STORAGE_KEY = "outled_admin_state_v1";
@@ -653,22 +672,17 @@ async function syncDeleteProduct(id) {
     for (const f of files) {
       if (!f.type.startsWith("image/")) continue;
       try {
-        if (storage) {
-          const ref = storage.ref().child(`produtos/fotos/${Date.now()}_${f.name}`);
-          const uploadTask = ref.put(f);
-          
-          uploadTask.on('state_changed', (snapshot) => {
-            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        try {
+          toast("Enviando foto... 0%", false, 0);
+          const url = await uploadToCloudinary(f, (progress) => {
             toast(`Enviando foto... ${progress}%`, false, 0);
           });
-          
-          const snapshot = await uploadTask;
-          const url = await snapshot.ref.getDownloadURL();
           efPhotos.push(url);
           toast("Foto enviada!");
-        } else {
-          // Fallback para o modo antigo (Base64) se o Firebase não estiver configurado
-          efPhotos.push(await fileToDataUrl(f));
+        } catch (er) {
+          console.error("Erro no upload do Cloudinary:", er);
+          toast("Erro no upload. Salvando localmente...", true);
+          try { efPhotos.push(await fileToDataUrl(f)); } catch (e2) {}
         }
       } catch (er) {
         console.error("Erro no upload da foto:", er);
@@ -683,28 +697,25 @@ async function syncDeleteProduct(id) {
     const files = Array.from(e.target.files || []);
     for (const f of files) {
       if (!f.type.startsWith("video/")) continue;
-      if (f.size > 25 * 1024 * 1024 && !storage) {
+      if (f.size > 25 * 1024 * 1024) {
         toast(`"${f.name}" passa de 25MB. Use URL.`, true);
         continue;
       }
       try {
-        if (storage) {
-          const ref = storage.ref().child(`produtos/videos/${Date.now()}_${f.name}`);
-          const uploadTask = ref.put(f);
-          
-          uploadTask.on('state_changed', (snapshot) => {
-            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        try {
+          toast("Enviando vídeo... 0%", false, 0);
+          const url = await uploadToCloudinary(f, (progress) => {
             toast(`Enviando vídeo... ${progress}%`, false, 0);
           });
-          
-          const snapshot = await uploadTask;
-          const url = await snapshot.ref.getDownloadURL();
           efVideos.push(url);
           toast("Vídeo enviado!");
-        } else {
-          // Fallback para o modo antigo (Base64) se o Firebase não estiver configurado
-          efVideos.push(await fileToDataUrl(f));
+        } catch (er) {
+          console.error("Erro no upload do Cloudinary:", er);
+          toast("Erro no upload. Salvando localmente...", true);
+          try { efVideos.push(await fileToDataUrl(f)); } catch (e2) {}
         }
+      } catch (er) {
+        console.error("Erro no upload do vídeo:", er);
       } catch (er) {
         console.error("Erro no upload do vídeo:", er);
         toast("Erro no upload. Salvando localmente...", true);
