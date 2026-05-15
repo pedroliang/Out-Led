@@ -2,6 +2,23 @@
 (function () {
   "use strict";
 
+  // Configuração do Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvI_18-FNtGjBXjP51eYnVZU1qO2aYsyE",
+    authDomain: "centralux2026.firebaseapp.com",
+    projectId: "centralux2026",
+    storageBucket: "centralux2026.firebasestorage.app",
+    messagingSenderId: "872877990274",
+    appId: "1:872877990274:web:99c556811906080571af9b",
+    measurementId: "G-SGDS6CN6Z2"
+  };
+
+  let storage;
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    storage = firebase.storage();
+  }
+
   const STORAGE_KEY = "outled_admin_state_v1";
   const FILTER_KEY = "outled_catalog_filter";
   const ADMIN_KEY = "outled_catalog_admin";
@@ -94,14 +111,16 @@ async function syncDeleteProduct(id) {
   }
 
   // ---------- Toast ----------
-  function toast(msg, isError) {
+  function toast(msg, isError, duration = 2400) {
     const el = $("#cat-toast");
     if (!el) return;
     el.textContent = msg;
     el.classList.toggle("error", !!isError);
     el.classList.add("show");
     clearTimeout(window.__catToast);
-    window.__catToast = setTimeout(() => el.classList.remove("show"), 2400);
+    if (duration > 0) {
+      window.__catToast = setTimeout(() => el.classList.remove("show"), duration);
+    }
   }
 
   // ---------- Stats ----------
@@ -633,7 +652,23 @@ async function syncDeleteProduct(id) {
     const files = Array.from(e.target.files || []);
     for (const f of files) {
       if (!f.type.startsWith("image/")) continue;
-      try { efPhotos.push(await fileToDataUrl(f)); } catch (er) {}
+      try {
+        if (storage) {
+          toast("Enviando foto para o Storage...", false, 0);
+          const ref = storage.ref().child(`produtos/fotos/${Date.now()}_${f.name}`);
+          const snapshot = await ref.put(f);
+          const url = await snapshot.ref.getDownloadURL();
+          efPhotos.push(url);
+          toast("Foto enviada!");
+        } else {
+          // Fallback para o modo antigo (Base64) se o Firebase não estiver configurado
+          efPhotos.push(await fileToDataUrl(f));
+        }
+      } catch (er) {
+        console.error("Erro no upload da foto:", er);
+        toast("Erro no upload. Salvando localmente...", true);
+        try { efPhotos.push(await fileToDataUrl(f)); } catch (e2) {}
+      }
     }
     e.target.value = "";
     renderEfMedia();
@@ -642,11 +677,27 @@ async function syncDeleteProduct(id) {
     const files = Array.from(e.target.files || []);
     for (const f of files) {
       if (!f.type.startsWith("video/")) continue;
-      if (f.size > 25 * 1024 * 1024) {
+      if (f.size > 25 * 1024 * 1024 && !storage) {
         toast(`"${f.name}" passa de 25MB. Use URL.`, true);
         continue;
       }
-      try { efVideos.push(await fileToDataUrl(f)); } catch (er) {}
+      try {
+        if (storage) {
+          toast("Enviando vídeo para o Storage...", false, 0);
+          const ref = storage.ref().child(`produtos/videos/${Date.now()}_${f.name}`);
+          const snapshot = await ref.put(f);
+          const url = await snapshot.ref.getDownloadURL();
+          efVideos.push(url);
+          toast("Vídeo enviado!");
+        } else {
+          // Fallback para o modo antigo (Base64) se o Firebase não estiver configurado
+          efVideos.push(await fileToDataUrl(f));
+        }
+      } catch (er) {
+        console.error("Erro no upload do vídeo:", er);
+        toast("Erro no upload. Salvando localmente...", true);
+        try { efVideos.push(await fileToDataUrl(f)); } catch (e2) {}
+      }
     }
     e.target.value = "";
     renderEfMedia();
