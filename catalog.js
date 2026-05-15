@@ -654,9 +654,15 @@ async function syncDeleteProduct(id) {
       if (!f.type.startsWith("image/")) continue;
       try {
         if (storage) {
-          toast("Enviando foto para o Storage...", false, 0);
           const ref = storage.ref().child(`produtos/fotos/${Date.now()}_${f.name}`);
-          const snapshot = await ref.put(f);
+          const uploadTask = ref.put(f);
+          
+          uploadTask.on('state_changed', (snapshot) => {
+            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            toast(`Enviando foto... ${progress}%`, false, 0);
+          });
+          
+          const snapshot = await uploadTask;
           const url = await snapshot.ref.getDownloadURL();
           efPhotos.push(url);
           toast("Foto enviada!");
@@ -683,9 +689,15 @@ async function syncDeleteProduct(id) {
       }
       try {
         if (storage) {
-          toast("Enviando vídeo para o Storage...", false, 0);
           const ref = storage.ref().child(`produtos/videos/${Date.now()}_${f.name}`);
-          const snapshot = await ref.put(f);
+          const uploadTask = ref.put(f);
+          
+          uploadTask.on('state_changed', (snapshot) => {
+            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            toast(`Enviando vídeo... ${progress}%`, false, 0);
+          });
+          
+          const snapshot = await uploadTask;
           const url = await snapshot.ref.getDownloadURL();
           efVideos.push(url);
           toast("Vídeo enviado!");
