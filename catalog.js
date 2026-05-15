@@ -702,22 +702,14 @@ async function syncDeleteProduct(id) {
         continue;
       }
       try {
-        try {
-          toast("Enviando vídeo... 0%", false, 0);
-          const url = await uploadToCloudinary(f, (progress) => {
-            toast(`Enviando vídeo... ${progress}%`, false, 0);
-          });
-          efVideos.push(url);
-          toast("Vídeo enviado!");
-        } catch (er) {
-          console.error("Erro no upload do Cloudinary:", er);
-          toast("Erro no upload. Salvando localmente...", true);
-          try { efVideos.push(await fileToDataUrl(f)); } catch (e2) {}
-        }
+        toast("Enviando vídeo... 0%", false, 0);
+        const url = await uploadToCloudinary(f, (progress) => {
+          toast(`Enviando vídeo... ${progress}%`, false, 0);
+        });
+        efVideos.push(url);
+        toast("Vídeo enviado!");
       } catch (er) {
-        console.error("Erro no upload do vídeo:", er);
-      } catch (er) {
-        console.error("Erro no upload do vídeo:", er);
+        console.error("Erro no upload do Cloudinary:", er);
         toast("Erro no upload. Salvando localmente...", true);
         try { efVideos.push(await fileToDataUrl(f)); } catch (e2) {}
       }
