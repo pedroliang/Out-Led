@@ -149,7 +149,9 @@ async function syncDeleteProduct(id) {
     const avgDisc = products.length
       ? Math.round(products.reduce((s, p) => s + discount(p), 0) / products.length) : 0;
     const cats = categories.length;
-    $("#cat-stats").innerHTML = `
+    const el = $("#cat-stats");
+    if (!el) return;
+    el.innerHTML = `
       <div class="cat-stat"><div class="v">${total}</div><div class="l">Produtos</div></div>
       <div class="cat-stat"><div class="v">${cats}</div><div class="l">Categorias</div></div>
       <div class="cat-stat"><div class="v led">−${avgDisc}%</div><div class="l">Desconto médio</div></div>
